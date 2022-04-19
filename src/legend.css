@@ -1,0 +1,42 @@
+.numbered-cycle-junction {
+  display: inline-block;
+  height: 2em;
+  width: 2em;
+  background: url('./symbols/shields/rcn-junction_1x1.svg') no-repeat;
+  background-position: center;
+  padding-top: 1em;
+  color: white;
+  font-family: sans-serif;
+  font-weight: 500;
+}
+
+.svg-mask {
+  margin: auto;
+  display: block;
+  width: 10px;
+  height: 10px;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.bicycle-zerba-crossing {
+  background-color: #0092da;
+  -webkit-mask: url('./symbols/osmfr/crossing.svg') no-repeat center;
+  mask: url('./symbols/osmfr/crossing.svg') no-repeat center;
+}
+
+.train-station {
+  background-color: #555;
+  -webkit-mask: url('./symbols/openstreetmap-carto/square.svg') no-repeat center;
+  mask: url('./symbols/openstreetmap-carto/square.svg') no-repeat center;
+}
+
+#full-legend tr > td:first-child {
+  padding-right: 1em;
+  text-align: center;
+  width: 2em;
+}
+
+#full-legend img {
+  max-height: 16px;
+}
