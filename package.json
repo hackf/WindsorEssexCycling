@@ -6,7 +6,7 @@
     "lint": "eslint src",
     "format": "prettier --write src",
     "start": "webpack serve --config webpack.dev.js",
-    "build": "webpack --config webpack.prod.js",
+    "build": "webpack --config webpack.production.js",
     "serve": "http-server dist"
   },
   "dependencies": {
