@@ -10,7 +10,7 @@ RUN ./gradlew clean build
 WORKDIR /usr/src/app/brouter/misc
 RUN mkdir segments4
 WORKDIR /usr/src/app/brouter/misc/segments4
-RUN curl -o W${LNG}_N${LAT}.rd5 http://brouter.de/brouter/segments4/W${LNG}_N${LAT}.rd5
+RUN curl -o ${LNG}_${LAT}.rd5 http://brouter.de/brouter/segments4/${LNG}_${LAT}.rd5
 WORKDIR /usr/src/brouter
 
 EXPOSE 17777
