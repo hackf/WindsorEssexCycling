@@ -28,7 +28,7 @@ A simple web server can be used to test the build by executing the following com
 
 ## Standalone Brouter Server
 
-To run a standalone Brouter HTTPServer that has been containerized, the following steps need to be executed.
+This section is geared towards documentation how to configure and run the Brouter HTTPServer. This server is used to provide routing information.
 
 ### Step 1: Build the docker image
 
