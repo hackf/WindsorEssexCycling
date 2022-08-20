@@ -34,7 +34,7 @@ This section is geared towards documentation how to configure and run the Broute
 
 The docker image requires two [build arguments](https://docs.docker.com/engine/reference/commandline/build/#set-build-time-variables---build-arg), LAT and LNG. These arguments are used to download a segment of the world that will be used by Brouter to provide routing. As of right now, the docker image only downloads one of these segment files because all of the WE area is contained in one slice.  For WE the values are: `N40` and `W85`. Go [here](http://brouter.de/brouter/segments4/) if you'd like to see what other segments are available.
 The routing segment files provisioned by Brouter are organized in a 5*5 degrees, with the filename containing the southwest corner of the square.  
-To have the container download the segment file `N40_W85.rd5`, and have the Brouter server point to it we execute the following `docker build` command:
+The docker image will download the required segment file and place it there Brouter expects it to be located. Below is an example on how to build the Brouter image:
 
 ```sh
 docker build -t brouter-server:N40_W85 --build-arg LAT=N40 --build-arg LNG=W85 .
