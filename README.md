@@ -45,7 +45,7 @@ docker build -t brouter-server:N40_W85 --build-arg LAT=N40 --build-arg LNG=W85 .
 To run the image build above, in order to spawn the Brouter routing server, the following command needs to be executed:
 
 ```sh
-docker run -p 127.0.0.1:17777:17777 we-cycling:latest
+docker run -p 127.0.0.1:17777:17777 brouter-server:N40_W85
 ```
 
 ### Step 3: Make the call for routing
