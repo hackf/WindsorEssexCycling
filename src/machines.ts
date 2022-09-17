@@ -5,9 +5,9 @@ export const markersMachine = createMachine({
     context: {
         markers: [],
     },
-    initial: "drag",
+    initial: "idle",
     states: {
-      drag: {
+      idle: {
         on: {
           ADD_MARKER: [
             {
@@ -27,6 +27,24 @@ export const markersMachine = createMachine({
             },
             {},
           ],
+          DRAG: [
+            {
+              target: "drag",
+            },
+          ],
+        },
+      },
+      drag: {
+        on: {
+          DROP: {
+            actions: assign({
+              markers: (context, event) => [
+                ...context.markers.filter((_, idx) => event.idx !== idx),
+                event.payload
+              ],
+            }),
+            target: "idle",
+          },
         },
       },
       add: {
@@ -41,7 +59,7 @@ export const markersMachine = createMachine({
             markers: (context, event) => [...context.markers, event.payload]
         }),
         always: {
-          target: "drag",
+          target: "idle",
         },
       },
       delete: {
@@ -58,7 +76,7 @@ export const markersMachine = createMachine({
           }
         }),
         always: {
-          target: "drag",
+          target: "idle",
         },
       },
     },

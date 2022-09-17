@@ -128,9 +128,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
       state.context.markers
         .map((markerData, idx) => {
-          const marker = L.marker(markerData);
-          if (state.matches('delete')) {
-            marker.addOneTimeEventListener('click', () => service.send({ type: 'ON_CLICK', idx }))
+          const marker = state.matches('drag')
+            ? L.marker(markerData, { draggable: true })
+            : L.marker(markerData);
+
+          if (state.matches('drag')) {
+            marker.addOneTimeEventListener('dragend', (e) => {
+              console.log(e);
+              service.send({ type: 'DROP', idx, payload: e.target.getLatLng() });
+            });
+          } else if (state.matches('delete')) {
+            marker.addOneTimeEventListener('click', () =>
+              service.send({ type: 'ON_CLICK', idx })
+            );
           }
           return marker;
         })
@@ -163,6 +173,14 @@ document.addEventListener('DOMContentLoaded', function () {
       service.send({ type: 'DELETE_MARKER' });
     },
     'Delete Marker'
+  ).addTo(map);
+
+  L.easyButton(
+    'fa-up-down-left-right',
+    function () {
+      service.send({ type: 'DRAG' });
+    },
+    'Drag Marker'
   ).addTo(map);
 
   // function addMarker(e: LeafletMouseEvent) {
