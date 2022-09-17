@@ -15,21 +15,6 @@ import './../node_modules/tingle.js/dist/tingle.css';
 import './legend.css';
 import './styles.css';
 
-if (process.env.NODE_ENV === 'production') {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker
-        .register('/service-worker.js')
-        .then((registration) => {
-          console.log('SW registered: ', registration);
-        })
-        .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
-        });
-    });
-  }
-}
-
 const VERSION = 'v0.1'; // TODO: Bump when pushing new version in production
 
 function checkQuerySelector(
@@ -107,8 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const service = interpret(markersMachine);
 
   function addMarker(e: LeafletMouseEvent) {
-    console.log('addMarker db was called');
-    service.send({ type: 'ON_CLICK', payload: e.latlng });
+    service.send({ type: 'ADD_ON_CLICK', payload: e.latlng });
   }
 
   const map = new L.Map('map', {
@@ -120,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const markers = L.layerGroup();
 
   service.onTransition((state) => {
-    console.log(state.value, state.context, state.event);
+    console.log(state.value, state.context);
 
     if (state.changed) {
       map.removeLayer(markers);
@@ -139,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
           } else if (state.matches('delete')) {
             marker.addOneTimeEventListener('click', () =>
-              service.send({ type: 'ON_CLICK', idx })
+              service.send({ type: 'DELETE_ON_CLICK', idx })
             );
           }
           return marker;
@@ -178,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
   L.easyButton(
     'fa-up-down-left-right',
     function () {
-      service.send({ type: 'DRAG' });
+      service.send({ type: 'DRAG_MARKER' });
     },
     'Drag Marker'
   ).addTo(map);

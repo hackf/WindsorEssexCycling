@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@bagage/leaflet.restoreview": "1.0.1",
+    "@xstate/cli": "^0.3.3",
     "leaflet": "1.7.1",
     "leaflet-easybutton": "2.4.0",
     "leaflet-fullhash": "1.0.0",

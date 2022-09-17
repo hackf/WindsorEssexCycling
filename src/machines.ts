@@ -1,11 +1,33 @@
+import { LatLng } from 'leaflet';
 import { createMachine, assign } from 'xstate';
 
-export const markersMachine = createMachine({
-    id: "markers-machine",
-    context: {
-        markers: [],
+interface MarkerContext {
+  markers: LatLng[];
+}
+
+type MarkerEvents =
+  | { type: 'ADD_MARKER' }
+  | { type: 'DELETE_MARKER' }
+  | { type: 'DRAG_MARKER' }
+  | { type: 'DELETE_ON_CLICK'; idx: number }
+  | { type: 'ADD_ON_CLICK'; payload: LatLng }
+  | { type: 'DROP'; idx: number; payload: LatLng };
+
+export const markersMachine = createMachine(
+  {
+    predictableActionArguments: true,
+    id: 'markers-machine',
+    // XState Typegen
+    // See: https://xstate.js.org/docs/guides/typescript.html#typegen
+    tsTypes: {} as import('./machines.typegen').Typegen0,
+    schema: {
+      context: {} as MarkerContext,
+      events: {} as MarkerEvents,
     },
-    initial: "idle",
+    context: {
+      markers: [],
+    },
+    initial: 'idle',
     states: {
       idle: {
         on: {
@@ -14,7 +36,7 @@ export const markersMachine = createMachine({
               cond: (context) => {
                 return context.markers.length < 2;
               },
-              target: "add",
+              target: 'add',
             },
             {},
           ],
@@ -23,13 +45,13 @@ export const markersMachine = createMachine({
               cond: (context) => {
                 return context.markers.length > 0;
               },
-              target: "delete",
+              target: 'delete',
             },
             {},
           ],
-          DRAG: [
+          DRAG_MARKER: [
             {
-              target: "drag",
+              target: 'drag',
             },
           ],
         },
@@ -37,48 +59,47 @@ export const markersMachine = createMachine({
       drag: {
         on: {
           DROP: {
-            actions: assign({
-              markers: (context, event) => [
-                ...context.markers.filter((_, idx) => event.idx !== idx),
-                event.payload
-              ],
-            }),
-            target: "idle",
+            actions: 'update_marker_latlng',
+            target: 'idle',
           },
         },
       },
       add: {
         on: {
-          ON_CLICK: {
-            target: "add_marker",
+          ADD_ON_CLICK: {
+            target: 'idle',
+            actions: 'add_marker',
           },
-        },
-      },
-      add_marker: {
-        entry: assign({
-            markers: (context, event) => [...context.markers, event.payload]
-        }),
-        always: {
-          target: "idle",
         },
       },
       delete: {
         on: {
-          ON_CLICK: {
-            target: "delete_marker",
+          DELETE_ON_CLICK: {
+            target: 'idle',
+            actions: 'delete_marker',
           },
         },
       },
-      delete_marker: {
-        entry: assign({
-          markers: (context, event) => {
-            return context.markers.filter((_, idx) => event.idx !== idx);
-          }
-        }),
-        always: {
-          target: "idle",
+    },
+  },
+  {
+    actions: {
+      delete_marker: assign({
+        markers: (context: MarkerContext, event) => {
+          return context.markers.filter((_, idx) => event.idx !== idx);
         },
-      },
+      }),
+      add_marker: assign({
+        markers: (context: MarkerContext, event) => {
+          return [...context.markers, event.payload];
+        },
+      }),
+      update_marker_latlng: assign({
+        markers: (context: MarkerContext, event) => [
+          ...context.markers.filter((_marker, idx) => event.idx !== idx),
+          event.payload,
+        ],
+      }),
     },
   }
 );
