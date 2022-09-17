@@ -1,4 +1,6 @@
-import L from 'leaflet';
+import L, {LeafletMouseEvent} from 'leaflet';
+import { interpret } from 'xstate';
+import {markersMachine} from './machines';
 
 import '@bagage/leaflet.restoreview';
 import 'leaflet-fullhash';
@@ -97,12 +99,71 @@ document.addEventListener('DOMContentLoaded', function () {
       maxZoom: 20,
     }
   );
+  
+  // Interpret the machine, and add a listener for whenever a transition occurs.
+  const service = interpret(markersMachine);
+
+  function addMarker(e: LeafletMouseEvent) {
+    console.log("addMarker db was called");
+    service.send({ type: 'ON_CLICK', payload: e.latlng });
+  }
 
   const map = new L.Map('map', {
     zoomControl: true,
     //layers: [cyclosm],
     layers: [cyclosm],
   });
+
+  const markers = L.layerGroup();
+
+  service.onTransition((state) => {
+    console.log(state.value, state.context);
+    if (state.changed) {
+      map.removeLayer(markers);
+      markers.clearLayers();
+      markers.addLayer(state.context.markers.map((markerData, idx) => {
+        const marker = L.marker(markerData);
+        if (state.matches('delete')) {
+          marker.addOneTimeEventListener('click', (e) => {
+            service.send({ type: 'ON_CLICK', idx });
+          });
+        }
+        return marker;
+      }));
+      map.addLayer(markers);
+
+      if (state.matches('add')){
+        map.addOneTimeEventListener('click', addMarker);
+      }
+    }
+  });
+
+  // Start the service
+  service.start();
+
+  L.easyButton(
+    'fa-add',
+    function () {
+      service.send({ type: 'ADD_MARKER' });
+    },
+    'Add Marker'
+  ).addTo(map);
+
+  L.easyButton(
+    'fa-remove',
+    function () {
+      service.send({ type: 'DELETE_MARKER' });
+    },
+    'Delete Marker'
+  ).addTo(map);
+
+  // function addMarker(e: LeafletMouseEvent) {
+  //   var marker = L.marker(e.latlng, {
+  //     draggable: true
+  //   }).addTo(map);
+  // }
+
+  // map.on('click', addMarker);
 
   map.attributionControl.setPrefix(
     '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> ' +
