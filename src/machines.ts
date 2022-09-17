@@ -54,7 +54,7 @@ export const markersMachine = createMachine({
       delete_marker: {
         entry: assign({
           markers: (context, event) => {
-            return context.filter((_, idx) => event.idx === idx);
+            return context.markers.filter((_, idx) => event.idx !== idx);
           }
         }),
         always: {

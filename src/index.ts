@@ -1,6 +1,6 @@
-import L, {LeafletMouseEvent} from 'leaflet';
+import L, { LeafletMouseEvent } from 'leaflet';
 import { interpret } from 'xstate';
-import {markersMachine} from './machines';
+import { markersMachine } from './machines';
 
 import '@bagage/leaflet.restoreview';
 import 'leaflet-fullhash';
@@ -32,7 +32,10 @@ if (process.env.NODE_ENV === 'production') {
 
 const VERSION = 'v0.1'; // TODO: Bump when pushing new version in production
 
-function checkQuerySelector(parent: Element | Document, selector: string): Element {
+function checkQuerySelector(
+  parent: Element | Document,
+  selector: string
+): Element {
   const element = parent.querySelector(selector);
   if (element == null) {
     console.error('Parent: ', parent);
@@ -99,12 +102,12 @@ document.addEventListener('DOMContentLoaded', function () {
       maxZoom: 20,
     }
   );
-  
+
   // Interpret the machine, and add a listener for whenever a transition occurs.
   const service = interpret(markersMachine);
 
   function addMarker(e: LeafletMouseEvent) {
-    console.log("addMarker db was called");
+    console.log('addMarker db was called');
     service.send({ type: 'ON_CLICK', payload: e.latlng });
   }
 
@@ -117,22 +120,27 @@ document.addEventListener('DOMContentLoaded', function () {
   const markers = L.layerGroup();
 
   service.onTransition((state) => {
-    console.log(state.value, state.context);
+    console.log(state.value, state.context, state.event);
+
     if (state.changed) {
       map.removeLayer(markers);
       markers.clearLayers();
-      markers.addLayer(state.context.markers.map((markerData, idx) => {
-        const marker = L.marker(markerData);
-        if (state.matches('delete')) {
-          marker.addOneTimeEventListener('click', (e) => {
-            service.send({ type: 'ON_CLICK', idx });
-          });
-        }
-        return marker;
-      }));
+
+      state.context.markers
+        .map((markerData, idx) => {
+          const marker = L.marker(markerData);
+          if (state.matches('delete')) {
+            marker.addOneTimeEventListener('click', () => service.send({ type: 'ON_CLICK', idx }))
+          }
+          return marker;
+        })
+        .forEach((marker) => {
+          markers.addLayer(marker);
+        });
+
       map.addLayer(markers);
 
-      if (state.matches('add')){
+      if (state.matches('add')) {
         map.addOneTimeEventListener('click', addMarker);
       }
     }
@@ -215,7 +223,9 @@ document.addEventListener('DOMContentLoaded', function () {
         closeLabel: 'Go to map',
       });
 
-      modal.setContent(checkQuerySelector(document, '#legend .iframe').innerHTML);
+      modal.setContent(
+        checkQuerySelector(document, '#legend .iframe').innerHTML
+      );
       modal.open();
     },
     'Legend'
@@ -244,15 +254,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (shouldLegendOpen) {
-      (checkQuerySelector(document, '#map') as HTMLElement).style.right = '300px';
-      (checkQuerySelector(document, '#legend .iframe') as HTMLElement).style.display = 'initial';
-      (checkQuerySelector(document, '#legend') as HTMLElement).style.width = '300px';
-      (checkQuerySelector(document, '#legend button') as HTMLElement).innerText = '❯';
+      (checkQuerySelector(document, '#map') as HTMLElement).style.right =
+        '300px';
+      (
+        checkQuerySelector(document, '#legend .iframe') as HTMLElement
+      ).style.display = 'initial';
+      (checkQuerySelector(document, '#legend') as HTMLElement).style.width =
+        '300px';
+      (
+        checkQuerySelector(document, '#legend button') as HTMLElement
+      ).innerText = '❯';
     } else {
-      (checkQuerySelector(document, '#map') as HTMLElement).style.right = '42px';
-      (checkQuerySelector(document, '#legend .iframe') as HTMLElement).style.display = 'none';
-      (checkQuerySelector(document, '#legend') as HTMLElement).style.width = '42px';
-      (checkQuerySelector(document, '#legend button') as HTMLElement).innerText = '❮';
+      (checkQuerySelector(document, '#map') as HTMLElement).style.right =
+        '42px';
+      (
+        checkQuerySelector(document, '#legend .iframe') as HTMLElement
+      ).style.display = 'none';
+      (checkQuerySelector(document, '#legend') as HTMLElement).style.width =
+        '42px';
+      (
+        checkQuerySelector(document, '#legend button') as HTMLElement
+      ).innerText = '❮';
     }
   }
 
@@ -260,27 +282,43 @@ document.addEventListener('DOMContentLoaded', function () {
 
   window.addEventListener('resize', handleResize);
 
-  (checkQuerySelector(document, '#legend button') as HTMLElement)
-    .addEventListener('click', function (event: MouseEvent) {
-      event.preventDefault();
+  (
+    checkQuerySelector(document, '#legend button') as HTMLElement
+  ).addEventListener('click', function (event: MouseEvent) {
+    event.preventDefault();
 
-      if ((checkQuerySelector(document, '#legend button') as HTMLElement).innerText == '❮') {
-        if (hasLocalStorage) {
-          window.localStorage.isLegendOpen = JSON.stringify(true);
-        }
-        (checkQuerySelector(document, '#map') as HTMLElement).style.right = '300px';
-        (checkQuerySelector(document, '#legend .iframe') as HTMLElement).style.display = 'initial';
-        (checkQuerySelector(document, '#legend') as HTMLElement).style.width = '300px';
-        (checkQuerySelector(document, '#legend button') as HTMLElement).innerText = '❯';
-      } else {
-        if (hasLocalStorage) {
-          window.localStorage.isLegendOpen = JSON.stringify(false);
-        }
-        (checkQuerySelector(document, '#map') as HTMLElement).style.right = '42px';
-        (checkQuerySelector(document, '#legend .iframe') as HTMLElement).style.display = 'none';
-        (checkQuerySelector(document, '#legend') as HTMLElement).style.width = '42px';
-        (checkQuerySelector(document, '#legend button') as HTMLElement).innerText = '❮';
+    if (
+      (checkQuerySelector(document, '#legend button') as HTMLElement)
+        .innerText == '❮'
+    ) {
+      if (hasLocalStorage) {
+        window.localStorage.isLegendOpen = JSON.stringify(true);
       }
-      map.invalidateSize();
-    });
+      (checkQuerySelector(document, '#map') as HTMLElement).style.right =
+        '300px';
+      (
+        checkQuerySelector(document, '#legend .iframe') as HTMLElement
+      ).style.display = 'initial';
+      (checkQuerySelector(document, '#legend') as HTMLElement).style.width =
+        '300px';
+      (
+        checkQuerySelector(document, '#legend button') as HTMLElement
+      ).innerText = '❯';
+    } else {
+      if (hasLocalStorage) {
+        window.localStorage.isLegendOpen = JSON.stringify(false);
+      }
+      (checkQuerySelector(document, '#map') as HTMLElement).style.right =
+        '42px';
+      (
+        checkQuerySelector(document, '#legend .iframe') as HTMLElement
+      ).style.display = 'none';
+      (checkQuerySelector(document, '#legend') as HTMLElement).style.width =
+        '42px';
+      (
+        checkQuerySelector(document, '#legend button') as HTMLElement
+      ).innerText = '❮';
+    }
+    map.invalidateSize();
+  });
 });
