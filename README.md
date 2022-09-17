@@ -13,7 +13,7 @@ The website can be view at: [windsoressexcycling.ca](https://windsoressexcycling
 To install the dependencies and start the dev server, execute the following commands:
 
     npm ci
-    npm start
+    npm run dev
 
 ## Production
 
@@ -24,7 +24,7 @@ To compile the production build, execute the following commands:
 
 A simple web server can be used to test the build by executing the following command:
 
-    npm run serve
+    npm run preview
 
 ## Standalone Brouter Server
 
