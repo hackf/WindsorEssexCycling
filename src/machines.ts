@@ -96,6 +96,8 @@ export const markersMachine = createMachine(
       }),
       update_marker_latlng: assign({
         markers: (context: MarkerContext, event) => [
+          // Remove the LatLng with the same index. This will be the state of the marker that was just
+          // dragged then dropped. Then we add it back in with the new LatLng object.
           ...context.markers.filter((_marker, idx) => event.idx !== idx),
           event.payload,
         ],
