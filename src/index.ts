@@ -1,4 +1,4 @@
-import L, { LeafletMouseEvent } from 'leaflet';
+import L, { LatLng, LeafletMouseEvent } from 'leaflet';
 import { interpret } from 'xstate';
 import { markersMachine } from './machines';
 
@@ -150,6 +150,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const markers = L.layerGroup();
   let buttons: L.Control[] = [];
+  let routes: L.Polyline[] = [];
+
+  function roundToNearestThousand(n: number) {
+    return Math.round(n * 10000) / 10000;
+  }
+
+  async function getRoute(markers: LatLng[]): Promise<LatLng[]> {
+    const params = new URLSearchParams();
+    params.set(
+      'lonlats', 
+      markers.map(
+        marker => `${roundToNearestThousand(marker.lng)},${roundToNearestThousand(marker.lat)}`).join('|')
+    );
+    params.set('alternativeidx', '0');
+    params.set('profile', 'trekking');
+    params.set('format', 'geojson');
+    const url = new URL(`http://127.0.0.1:17777/brouter?${params.toString()}`);
+    const response = await fetch(url.toString());
+    const geojson = await response.json();
+    const lnglats = geojson.features[0].geometry.coordinates;
+    return lnglats.map(([lng, lat]: [number, number]) => [lat, lng]);
+  }
+
 
   service.onTransition((state) => {
 
@@ -209,7 +232,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
           if (state.matches('drag')) {
             marker.addOneTimeEventListener('dragend', (e) => {
-              console.log(e);
               service.send({ type: 'DROP', idx, payload: e.target.getLatLng() });
             });
           } else if (state.matches('delete')) {
@@ -228,19 +250,21 @@ document.addEventListener('DOMContentLoaded', function () {
       if (state.matches('add')) {
         map.addOneTimeEventListener('click', addMarker);
       }
+
+      if (state.context.markers.length >= 2) {
+        getRoute(state.context.markers)
+          .then(data => {
+            routes.forEach(route => map.removeLayer(route));
+            const route = L.polyline(data, {color: 'red'});
+            routes.push(route);
+            map.addLayer(route);
+          })
+      }
     }
   });
 
   // Start the service
   service.start();
-
-  // function addMarker(e: LeafletMouseEvent) {
-  //   var marker = L.marker(e.latlng, {
-  //     draggable: true
-  //   }).addTo(map);
-  // }
-
-  // map.on('click', addMarker);
 
   map.attributionControl.setPrefix(
     '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> ' +

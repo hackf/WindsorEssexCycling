@@ -34,18 +34,14 @@ export const markersMachine = createMachine(
         on: {
           ADD_MARKER: [
             {
-              cond: (context) => {
-                return context.markers.length < 2;
-              },
+              cond: 'noMoreThanNMarkers',
               target: 'add',
             },
             {},
           ],
           DELETE_MARKER: [
             {
-              cond: (context) => {
-                return context.markers.length > 0;
-              },
+              cond: 'greaterThanZero',
               target: 'delete',
             },
             {},
@@ -64,13 +60,15 @@ export const markersMachine = createMachine(
             target: 'idle',
           },
           GO_TO_IDLE: {
-            target: 'idle'
+            target: 'idle',
           },
           ADD_MARKER: {
-            target: 'add'
+            cond: 'noMoreThanNMarkers',
+            target: 'add',
           },
           DELETE_MARKER: {
-            target: 'delete'
+            cond: 'greaterThanZero',
+            target: 'delete',
           },
         },
       },
@@ -81,13 +79,14 @@ export const markersMachine = createMachine(
             actions: 'add_marker',
           },
           GO_TO_IDLE: {
-            target: 'idle'
+            target: 'idle',
           },
           DELETE_MARKER: {
-            target: 'delete'
+            cond: 'greaterThanZero',
+            target: 'delete',
           },
-          DRAG_MARKER : {
-            target: 'drag'
+          DRAG_MARKER: {
+            target: 'drag',
           },
         },
       },
@@ -98,19 +97,28 @@ export const markersMachine = createMachine(
             actions: 'delete_marker',
           },
           GO_TO_IDLE: {
-            target: 'idle'
+            target: 'idle',
           },
-          DRAG_MARKER : {
-            target: 'drag'
+          DRAG_MARKER: {
+            target: 'drag',
           },
           ADD_MARKER: {
-            target: 'add'
+            cond: 'noMoreThanNMarkers',
+            target: 'add',
           },
         },
       },
     },
   },
   {
+    guards: {
+      noMoreThanNMarkers: (context: MarkerContext) => {
+        return context.markers.length < 5;
+      },
+      greaterThanZero: (context) => {
+        return context.markers.length > 0;
+      },
+    },
     actions: {
       delete_marker: assign({
         markers: (context: MarkerContext, event) => {
@@ -133,3 +141,4 @@ export const markersMachine = createMachine(
     },
   }
 );
+
