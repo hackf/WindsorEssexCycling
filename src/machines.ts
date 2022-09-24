@@ -9,6 +9,7 @@ type MarkerEvents =
   | { type: 'ADD_MARKER' }
   | { type: 'DELETE_MARKER' }
   | { type: 'DRAG_MARKER' }
+  | { type: 'GO_TO_IDLE' }
   | { type: 'DELETE_ON_CLICK'; idx: number }
   | { type: 'ADD_ON_CLICK'; payload: LatLng }
   | { type: 'DROP'; idx: number; payload: LatLng };
@@ -62,6 +63,15 @@ export const markersMachine = createMachine(
             actions: 'update_marker_latlng',
             target: 'idle',
           },
+          GO_TO_IDLE: {
+            target: 'idle'
+          },
+          ADD_MARKER: {
+            target: 'add'
+          },
+          DELETE_MARKER: {
+            target: 'delete'
+          },
         },
       },
       add: {
@@ -70,6 +80,15 @@ export const markersMachine = createMachine(
             target: 'idle',
             actions: 'add_marker',
           },
+          GO_TO_IDLE: {
+            target: 'idle'
+          },
+          DELETE_MARKER: {
+            target: 'delete'
+          },
+          DRAG_MARKER : {
+            target: 'drag'
+          },
         },
       },
       delete: {
@@ -77,6 +96,15 @@ export const markersMachine = createMachine(
           DELETE_ON_CLICK: {
             target: 'idle',
             actions: 'delete_marker',
+          },
+          GO_TO_IDLE: {
+            target: 'idle'
+          },
+          DRAG_MARKER : {
+            target: 'drag'
+          },
+          ADD_MARKER: {
+            target: 'add'
           },
         },
       },

@@ -101,101 +101,8 @@ document.addEventListener('DOMContentLoaded', function () {
     layers: [cyclosm],
   });
 
-  const markers = L.layerGroup();
-
-  service.onTransition((state) => {
-    console.log(state.value, state.context);
-
-    if (state.changed) {
-      map.removeLayer(markers);
-      markers.clearLayers();
-
-      state.context.markers
-        .map((markerData, idx) => {
-          const marker = state.matches('drag')
-            ? L.marker(markerData, { draggable: true })
-            : L.marker(markerData);
-
-          if (state.matches('drag')) {
-            marker.addOneTimeEventListener('dragend', (e) => {
-              console.log(e);
-              service.send({ type: 'DROP', idx, payload: e.target.getLatLng() });
-            });
-          } else if (state.matches('delete')) {
-            marker.addOneTimeEventListener('click', () =>
-              service.send({ type: 'DELETE_ON_CLICK', idx })
-            );
-          }
-          return marker;
-        })
-        .forEach((marker) => {
-          markers.addLayer(marker);
-        });
-
-      map.addLayer(markers);
-
-      if (state.matches('add')) {
-        map.addOneTimeEventListener('click', addMarker);
-      }
-    }
-  });
-
-  // Start the service
-  service.start();
-
-  L.easyButton(
-    'fa-add',
-    function () {
-      service.send({ type: 'ADD_MARKER' });
-    },
-    'Add Marker'
-  ).addTo(map);
-
-  L.easyButton(
-    'fa-remove',
-    function () {
-      service.send({ type: 'DELETE_MARKER' });
-    },
-    'Delete Marker'
-  ).addTo(map);
-
-  L.easyButton(
-    'fa-up-down-left-right',
-    function () {
-      service.send({ type: 'DRAG_MARKER' });
-    },
-    'Drag Marker'
-  ).addTo(map);
-
-  // function addMarker(e: LeafletMouseEvent) {
-  //   var marker = L.marker(e.latlng, {
-  //     draggable: true
-  //   }).addTo(map);
-  // }
-
-  // map.on('click', addMarker);
-
-  map.attributionControl.setPrefix(
-    '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> ' +
-      VERSION
-  );
-
-  if (!map.restoreView()) {
-    // Default view on Essex County, ON.
-    map.setView([42.1659, -82.6633], 11);
-  }
-
-  // Set up hash plugin
-  const allMapLayers = {
-    cyclosm: cyclosm,
-  };
-  L.hash(map, allMapLayers);
-
-  // Add a scale
-  L.control.scale().addTo(map);
-
-  // Set up routing / edit / help / legend buttons
-  L.easyButton(
+   // Set up routing / edit / help / legend buttons
+   L.easyButton(
     'fa-route',
     function () {
       window.open(
@@ -240,6 +147,119 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     'About'
   ).addTo(map);
+
+  const markers = L.layerGroup();
+  let buttons: L.Control[] = [];
+
+  service.onTransition((state) => {
+
+    buttons.forEach(button => map.removeControl(button));
+    buttons = [];
+
+    const dragButton = L.easyButton(
+      'fa-up-down-left-right',
+      function () {
+        if (state.matches("drag")) {
+          service.send({ type: 'GO_TO_IDLE' });
+        } else {
+          service.send({ type: 'DRAG_MARKER' });
+        }
+      },
+      'Drag Marker'
+    );
+    buttons.push(dragButton);
+
+    const addButton = L.easyButton(
+      'fa-add',
+      function () {
+      if (state.matches("add")){
+        service.send({ type: 'GO_TO_IDLE' });
+      } else {
+        service.send({ type: 'ADD_MARKER' });
+      }
+      },
+      'Add Marker'
+    );
+    buttons.push(addButton)
+
+    const removeButton = L.easyButton(
+      'fa-remove',
+      function () {
+      if (state.matches("delete")){
+        service.send({ type: 'GO_TO_IDLE' });
+      } else {
+        service.send({ type: 'DELETE_MARKER' });
+      }
+      },
+      'Delete Marker'
+    );
+    buttons.push(removeButton)
+
+    buttons.forEach(button => button.addTo(map));
+
+    if (state.changed) {
+      map.removeLayer(markers);
+      markers.clearLayers();
+
+      state.context.markers
+        .map((markerData, idx) => {
+          const marker: L.Marker = state.matches('drag')
+            ? L.marker(markerData, { draggable: true })
+            : L.marker(markerData);
+
+          if (state.matches('drag')) {
+            marker.addOneTimeEventListener('dragend', (e) => {
+              console.log(e);
+              service.send({ type: 'DROP', idx, payload: e.target.getLatLng() });
+            });
+          } else if (state.matches('delete')) {
+            marker.addOneTimeEventListener('click', () =>
+              service.send({ type: 'DELETE_ON_CLICK', idx })
+            );
+          }
+          return marker;
+        })
+        .forEach((marker) => {
+          markers.addLayer(marker);
+        });
+
+      map.addLayer(markers);
+
+      if (state.matches('add')) {
+        map.addOneTimeEventListener('click', addMarker);
+      }
+    }
+  });
+
+  // Start the service
+  service.start();
+
+  // function addMarker(e: LeafletMouseEvent) {
+  //   var marker = L.marker(e.latlng, {
+  //     draggable: true
+  //   }).addTo(map);
+  // }
+
+  // map.on('click', addMarker);
+
+  map.attributionControl.setPrefix(
+    '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> ' +
+      VERSION
+  );
+
+  if (!map.restoreView()) {
+    // Default view on Essex County, ON.
+    map.setView([42.1659, -82.6633], 11);
+  }
+
+  // Set up hash plugin
+  const allMapLayers = {
+    cyclosm: cyclosm,
+  };
+  L.hash(map, allMapLayers);
+
+  // Add a scale
+  L.control.scale().addTo(map);
 
   // =============
   // Handle legend
