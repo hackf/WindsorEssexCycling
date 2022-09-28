@@ -1,6 +1,7 @@
 import L, { LatLng, LeafletMouseEvent } from 'leaflet';
 import { interpret } from 'xstate';
 import { markersMachine } from './machines';
+import { routesMachine } from './routemachine';
 
 import '@bagage/leaflet.restoreview';
 import 'leaflet-fullhash';
@@ -250,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (state.matches('add')) {
         map.addOneTimeEventListener('click', addMarker);
       }
-
       if (state.context.markers.length >= 2) {
         getRoute(state.context.markers)
           .then(data => {
@@ -262,6 +262,13 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
   });
+  routeService.onTransition((state) => {
+    map.removeLayer(state.context.route);
+    const route = L.polyline(state.context.route, {color: 'red'});
+    routes.push(route);
+    map.addLayer(route);
+  });
+
 
   // Start the service
   service.start();
