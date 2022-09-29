@@ -91,6 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Interpret the machine, and add a listener for whenever a transition occurs.
   const service = interpret(markersMachine);
+  const routeService = interpret(routesMachine);
 
   function addMarker(e: LeafletMouseEvent) {
     service.send({ type: 'ADD_ON_CLICK', payload: e.latlng });
@@ -251,10 +252,11 @@ document.addEventListener('DOMContentLoaded', function () {
       if (state.matches('add')) {
         map.addOneTimeEventListener('click', addMarker);
       }
+      routes.forEach(route => map.removeLayer(route));
       if (state.context.markers.length >= 2) {
         getRoute(state.context.markers)
           .then(data => {
-            routes.forEach(route => map.removeLayer(route));
+            routes = [];
             const route = L.polyline(data, {color: 'red'});
             routes.push(route);
             map.addLayer(route);
