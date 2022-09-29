@@ -1,9 +1,6 @@
 import { createMachine, assign } from 'xstate';
 import { LatLng } from 'leaflet';
 
-// const fetchUser = (userId) =>
-//   fetch(`url/to/user/${userId}`).then((response) => response.json());
-
 function roundToNearestThousand(n: number) {
     return Math.round(n * 10000) / 10000;
 }
@@ -33,7 +30,10 @@ export const routesMachine = createMachine({
   states: {
     idle: {
       on: {
-        FETCH: { target: 'loading' }
+        FETCH: { 
+          target: 'loading',
+        //   actions: <populate markers>
+        }
       }
     },
     loading: {

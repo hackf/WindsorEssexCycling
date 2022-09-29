@@ -154,26 +154,26 @@ document.addEventListener('DOMContentLoaded', function () {
   let buttons: L.Control[] = [];
   let routes: L.Polyline[] = [];
 
-  function roundToNearestThousand(n: number) {
-    return Math.round(n * 10000) / 10000;
-  }
+  // function roundToNearestThousand(n: number) {
+  //   return Math.round(n * 10000) / 10000;
+  // }
 
-  async function getRoute(markers: LatLng[]): Promise<LatLng[]> {
-    const params = new URLSearchParams();
-    params.set(
-      'lonlats', 
-      markers.map(
-        marker => `${roundToNearestThousand(marker.lng)},${roundToNearestThousand(marker.lat)}`).join('|')
-    );
-    params.set('alternativeidx', '0');
-    params.set('profile', 'trekking');
-    params.set('format', 'geojson');
-    const url = new URL(`http://127.0.0.1:17777/brouter?${params.toString()}`);
-    const response = await fetch(url.toString());
-    const geojson = await response.json();
-    const lnglats = geojson.features[0].geometry.coordinates;
-    return lnglats.map(([lng, lat]: [number, number]) => [lat, lng]);
-  }
+  // async function getRoute(markers: LatLng[]): Promise<LatLng[]> {
+  //   const params = new URLSearchParams();
+  //   params.set(
+  //     'lonlats', 
+  //     markers.map(
+  //       marker => `${roundToNearestThousand(marker.lng)},${roundToNearestThousand(marker.lat)}`).join('|')
+  //   );
+  //   params.set('alternativeidx', '0');
+  //   params.set('profile', 'trekking');
+  //   params.set('format', 'geojson');
+  //   const url = new URL(`http://127.0.0.1:17777/brouter?${params.toString()}`);
+  //   const response = await fetch(url.toString());
+  //   const geojson = await response.json();
+  //   const lnglats = geojson.features[0].geometry.coordinates;
+  //   return lnglats.map(([lng, lat]: [number, number]) => [lat, lng]);
+  // }
 
 
   service.onTransition((state) => {
@@ -254,18 +254,11 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       routes.forEach(route => map.removeLayer(route));
       if (state.context.markers.length >= 2) {
-        getRoute(state.context.markers)
-          .then(data => {
-            routes = [];
-            const route = L.polyline(data, {color: 'red'});
-            routes.push(route);
-            map.addLayer(route);
-          })
+        routeService.send({ type: 'FETCH', state.context.markers}),
       }
     }
   });
   routeService.onTransition((state) => {
-    map.removeLayer(state.context.route);
     const route = L.polyline(state.context.route, {color: 'red'});
     routes.push(route);
     map.addLayer(route);
@@ -274,6 +267,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Start the service
   service.start();
+  routeService.start();
 
   map.attributionControl.setPrefix(
     '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> ' +
