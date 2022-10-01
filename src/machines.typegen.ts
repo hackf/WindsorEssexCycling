@@ -18,7 +18,10 @@ export interface Typegen0 {
     update_marker_latlng: 'DROP';
   };
   eventsCausingServices: {};
-  eventsCausingGuards: {};
+  eventsCausingGuards: {
+    greaterThanZero: 'DELETE_MARKER';
+    noMoreThanNMarkers: 'ADD_MARKER';
+  };
   eventsCausingDelays: {};
   matchesStates: 'add' | 'delete' | 'drag' | 'idle';
   tags: never;

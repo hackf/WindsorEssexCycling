@@ -103,8 +103,8 @@ document.addEventListener('DOMContentLoaded', function () {
     layers: [cyclosm],
   });
 
-   // Set up routing / edit / help / legend buttons
-   L.easyButton(
+  // Set up routing / edit / help / legend buttons
+  L.easyButton(
     'fa-route',
     function () {
       window.open(
@@ -152,39 +152,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const markers = L.layerGroup();
   let buttons: L.Control[] = [];
-  let routes: L.Polyline[] = [];
-
-  // function roundToNearestThousand(n: number) {
-  //   return Math.round(n * 10000) / 10000;
-  // }
-
-  // async function getRoute(markers: LatLng[]): Promise<LatLng[]> {
-  //   const params = new URLSearchParams();
-  //   params.set(
-  //     'lonlats', 
-  //     markers.map(
-  //       marker => `${roundToNearestThousand(marker.lng)},${roundToNearestThousand(marker.lat)}`).join('|')
-  //   );
-  //   params.set('alternativeidx', '0');
-  //   params.set('profile', 'trekking');
-  //   params.set('format', 'geojson');
-  //   const url = new URL(`http://127.0.0.1:17777/brouter?${params.toString()}`);
-  //   const response = await fetch(url.toString());
-  //   const geojson = await response.json();
-  //   const lnglats = geojson.features[0].geometry.coordinates;
-  //   return lnglats.map(([lng, lat]: [number, number]) => [lat, lng]);
-  // }
-
+ 
 
   service.onTransition((state) => {
-
-    buttons.forEach(button => map.removeControl(button));
+    buttons.forEach((button) => map.removeControl(button));
     buttons = [];
 
     const dragButton = L.easyButton(
       'fa-up-down-left-right',
       function () {
-        if (state.matches("drag")) {
+        if (state.matches('drag')) {
           service.send({ type: 'GO_TO_IDLE' });
         } else {
           service.send({ type: 'DRAG_MARKER' });
@@ -197,30 +174,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const addButton = L.easyButton(
       'fa-add',
       function () {
-      if (state.matches("add")){
-        service.send({ type: 'GO_TO_IDLE' });
-      } else {
-        service.send({ type: 'ADD_MARKER' });
-      }
+        if (state.matches('add')) {
+          service.send({ type: 'GO_TO_IDLE' });
+        } else {
+          service.send({ type: 'ADD_MARKER' });
+        }
       },
       'Add Marker'
     );
-    buttons.push(addButton)
+    buttons.push(addButton);
 
     const removeButton = L.easyButton(
       'fa-remove',
       function () {
-      if (state.matches("delete")){
-        service.send({ type: 'GO_TO_IDLE' });
-      } else {
-        service.send({ type: 'DELETE_MARKER' });
-      }
+        if (state.matches('delete')) {
+          service.send({ type: 'GO_TO_IDLE' });
+        } else {
+          service.send({ type: 'DELETE_MARKER' });
+        }
       },
       'Delete Marker'
     );
-    buttons.push(removeButton)
+    buttons.push(removeButton);
 
-    buttons.forEach(button => button.addTo(map));
+    buttons.forEach((button) => button.addTo(map));
 
     if (state.changed) {
       map.removeLayer(markers);
@@ -234,7 +211,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
           if (state.matches('drag')) {
             marker.addOneTimeEventListener('dragend', (e) => {
-              service.send({ type: 'DROP', idx, payload: e.target.getLatLng() });
+              service.send({
+                type: 'DROP',
+                idx,
+                payload: e.target.getLatLng(),
+              });
             });
           } else if (state.matches('delete')) {
             marker.addOneTimeEventListener('click', () =>
@@ -252,18 +233,20 @@ document.addEventListener('DOMContentLoaded', function () {
       if (state.matches('add')) {
         map.addOneTimeEventListener('click', addMarker);
       }
-      routes.forEach(route => map.removeLayer(route));
+      
       if (state.context.markers.length >= 2) {
-        routeService.send({ type: 'FETCH', state.context.markers}),
+        routeService.send({ type: 'FETCH', payload: state.context.markers });
       }
     }
   });
+
+  let route: L.Polyline | null = null ;
+
   routeService.onTransition((state) => {
-    const route = L.polyline(state.context.route, {color: 'red'});
-    routes.push(route);
+    map.removeLayer(route);
+    route = (state.context.route) ? L.polyline(state.context.route, { color: 'red' }) : null;
     map.addLayer(route);
   });
-
 
   // Start the service
   service.start();
