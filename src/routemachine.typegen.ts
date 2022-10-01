@@ -15,7 +15,9 @@ export interface Typegen0 {
     'xstate.init': { type: 'xstate.init' };
     'xstate.stop': { type: 'xstate.stop' };
   };
-  invokeSrcNameMap: {};
+  invokeSrcNameMap: {
+    getRoute: 'done.invoke.getRoute';
+  };
   missingImplementations: {
     actions: never;
     services: never;
@@ -26,9 +28,13 @@ export interface Typegen0 {
     abortFetch: 'FETCH';
     clearRoute: 'FETCH' | 'xstate.stop';
     createAbortController: 'FETCH' | 'RETRY';
+    setError: 'error.platform.getRoute';
     setMarkers: 'FETCH';
+    setRoute: 'done.invoke.getRoute';
   };
-  eventsCausingServices: {};
+  eventsCausingServices: {
+    getRoute: 'FETCH' | 'RETRY';
+  };
   eventsCausingGuards: {};
   eventsCausingDelays: {};
   matchesStates: 'failure' | 'idle' | 'loading';

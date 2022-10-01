@@ -234,17 +234,21 @@ document.addEventListener('DOMContentLoaded', function () {
         map.addOneTimeEventListener('click', addMarker);
       }
       
-      if (state.context.markers.length >= 2) {
+      // Only request a route while in the idle state
+      // This fixes the flickering (route being removed and added) when the
+      // state transitions. Realisically, the route should only be fetched after
+      // changes to the markers which means the machine should be in the idle state
+      if (state.matches('idle') && state.context.markers.length >= 2) {
         routeService.send({ type: 'FETCH', payload: state.context.markers });
       }
     }
   });
 
-  let route: L.Polyline | null = null ;
+  let route: L.Polyline = L.polyline([]);
 
   routeService.onTransition((state) => {
     map.removeLayer(route);
-    route = (state.context.route) ? L.polyline(state.context.route, { color: 'red' }) : null;
+    route = (state.context.route) ? L.polyline(state.context.route, { color: 'red' }) : L.polyline([]);
     map.addLayer(route);
   });
 

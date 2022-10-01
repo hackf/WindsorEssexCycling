@@ -1,12 +1,27 @@
 import { createMachine, assign } from 'xstate';
-import { LatLng, Polyline } from 'leaflet';
-import { GeoJsonObject } from 'geojson';
+import { LatLng, LatLngTuple } from 'leaflet';
+import type {
+  FeatureCollection,
+  Feature,
+  LineString,
+  GeoJsonProperties,
+} from 'geojson';
 
 function roundToNearestThousand(n: number) {
   return Math.round(n * 10000) / 10000;
 }
 
-const fetchRoute = (markers: LatLng[], signal: AbortSignal): Promise<GeoJsonObject> => {
+function isLineString<T extends GeoJsonProperties>(
+  feature: Feature
+): feature is Feature<LineString, T> {
+  return (
+    feature != null &&
+    feature.type === 'Feature' &&
+    feature.geometry.type === 'LineString'
+  );
+}
+
+const fetchRoute = async (markers: LatLng[], signal: AbortSignal) => {
   const params = new URLSearchParams();
   params.set(
     'lonlats',
@@ -23,32 +38,51 @@ const fetchRoute = (markers: LatLng[], signal: AbortSignal): Promise<GeoJsonObje
   params.set('profile', 'trekking');
   params.set('format', 'geojson');
   const url = new URL(`http://127.0.0.1:17777/brouter?${params.toString()}`);
-  return fetch(url.toString(), { signal }).then((response) => response.json() as Promise<GeoJsonObject>);
+  const response = await fetch(url.toString(), { signal });
+
+  if (!response.ok) {
+    throw new Error(response.statusText);
+  }
+
+  const data = (await response.json()) as FeatureCollection;
+  const feature = data.features[0];
+
+  if (!isLineString(feature)) {
+    throw new Error('Did not recieve a LineString feature');
+  }
+
+  return feature;
 };
 
 interface RoutesContext {
   markers: LatLng[];
-  route: Polyline | null;
+  route: LatLngTuple[] | null;
   controller: AbortController | null;
-  error: undefined;
+  error: any;
 }
 
 type RoutesEvents = { type: 'FETCH'; payload: LatLng[] } | { type: 'RETRY' };
 
+type RoutesServies = {
+  getRoute: { data: Feature<LineString, GeoJsonProperties> };
+};
+
 export const routesMachine = createMachine(
   {
     id: 'routes-machine',
+    predictableActionArguments: true,
     initial: 'idle',
     tsTypes: {} as import('./routemachine.typegen').Typegen0,
     schema: {
       context: {} as RoutesContext,
       events: {} as RoutesEvents,
+      services: {} as RoutesServies,
     },
     context: {
       markers: [],
       route: null,
       controller: null,
-      error: undefined,
+      error: null,
     },
     states: {
       idle: {
@@ -70,24 +104,14 @@ export const routesMachine = createMachine(
         },
         invoke: {
           id: 'getRoute',
-          src: (context: RoutesContext & { controller: AbortController }) =>
-            fetchRoute(context.markers, context.controller.signal),
+          src: 'getRoute',
           onDone: {
             target: 'idle',
-            actions: assign({
-              route: (_context, event) => {
-                const geojson = event.data;
-                const lnglats = geojson.features[0].geometry.coordinates;
-                return lnglats.map(([lng, lat]: [number, number]) => [
-                  lat,
-                  lng,
-                ]);
-              },
-            }),
+            actions: 'setRoute',
           },
           onError: {
             target: 'failure',
-            actions: assign({ error: (_context, event) => event.data }),
+            actions: 'setError',
           },
         },
       },
@@ -99,9 +123,26 @@ export const routesMachine = createMachine(
     },
   },
   {
+    services: {
+      getRoute: async (context: RoutesContext) => {
+        if (context.controller == null) {
+          throw new Error('Abort Controller not set');
+        }
+        return await fetchRoute(context.markers, context.controller.signal);
+      },
+    },
     actions: {
+      setError: assign({ error: (_context, event) => event.data as Error }),
+      setRoute: assign({
+        route: (_context, event) => {
+          return event.data.geometry.coordinates.map(([lng, lat]) => [
+            lat,
+            lng,
+          ]) as LatLngTuple[];
+        },
+      }),
       createAbortController: assign({
-        controller: () => {
+        controller: (_context) => {
           return new AbortController();
         },
       }),
@@ -116,7 +157,7 @@ export const routesMachine = createMachine(
         },
       }),
       clearRoute: assign({
-        route: () => [],
+        route: (_context) => null,
       }),
     },
   }
