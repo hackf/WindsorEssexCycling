@@ -241,6 +241,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (state.matches('idle') && state.context.markers.length >= 2) {
         routeService.send({ type: 'FETCH', payload: state.context.markers });
       }
+
+      if (state.matches('idle') && state.context.markers.length < 2) {
+        routeService.send({ type: 'CLEAR_ROUTES'}); 
+      } 
     }
   });
 
