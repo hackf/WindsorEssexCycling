@@ -63,7 +63,7 @@ interface RoutesContext {
 
 type RoutesEvents = { type: 'FETCH'; payload: LatLng[] } | { type: 'RETRY' };
 
-type RoutesServies = {
+type RoutesService= {
   getRoute: { data: Feature<LineString, GeoJsonProperties> };
 };
 
@@ -76,7 +76,7 @@ export const routesMachine = createMachine(
     schema: {
       context: {} as RoutesContext,
       events: {} as RoutesEvents,
-      services: {} as RoutesServies,
+      services: {} as RoutesService
     },
     context: {
       markers: [],
