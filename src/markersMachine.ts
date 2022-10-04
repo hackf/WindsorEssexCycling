@@ -20,7 +20,7 @@ export const markersMachine = createMachine(
     id: 'markers-machine',
     // XState Typegen
     // See: https://xstate.js.org/docs/guides/typescript.html#typegen
-    tsTypes: {} as import('./machines.typegen').Typegen0,
+    tsTypes: {} as import('./routeMachine.typegen').Typegen0,
     schema: {
       context: {} as MarkerContext,
       events: {} as MarkerEvents,

@@ -77,7 +77,7 @@ export const routesMachine = createMachine(
     id: 'routes-machine',
     predictableActionArguments: true,
     initial: 'idle',
-    tsTypes: {} as import('./routemachine.typegen').Typegen0,
+    tsTypes: {} as import('./routeMachine.typegen').Typegen0,
     schema: {
       context: {} as RoutesContext,
       events: {} as RoutesEvents,
