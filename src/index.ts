@@ -1,4 +1,4 @@
-import L, { LatLng, LeafletMouseEvent } from 'leaflet';
+import L, { LeafletMouseEvent } from 'leaflet';
 import { interpret } from 'xstate';
 import { markersMachine } from './markersMachine';
 import { routesMachine } from './routeMachine';
@@ -152,7 +152,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const markers = L.layerGroup();
   let buttons: L.Control[] = [];
- 
 
   service.onTransition((state) => {
     buttons.forEach((button) => map.removeControl(button));
@@ -233,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (state.matches('add')) {
         map.addOneTimeEventListener('click', addMarker);
       }
-      
+
       // Only request a route while in the idle state
       // This fixes the flickering (route being removed and added) when the
       // state transitions. Realisically, the route should only be fetched after
@@ -243,8 +242,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       if (state.context.markers.length < 2) {
-        routeService.send({ type: 'CLEAR_ROUTES'}); 
-      } 
+        routeService.send({ type: 'CLEAR_ROUTES' });
+      }
     }
   });
 
@@ -252,7 +251,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   routeService.onTransition((state) => {
     map.removeLayer(route);
-    route = (state.context.route) ? L.polyline(state.context.route, { color: 'red' }) : L.polyline([]);
+    route = state.context.route
+      ? L.polyline(state.context.route, { color: 'red' })
+      : L.polyline([]);
     map.addLayer(route);
   });
 

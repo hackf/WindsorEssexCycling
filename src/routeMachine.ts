@@ -63,12 +63,12 @@ interface RoutesContext {
   error: any;
 }
 
-type RoutesEvents = 
-| { type: 'FETCH'; payload: LatLng[] }
-| { type: 'RETRY' }
-| { type: 'CLEAR_ROUTES'};
+type RoutesEvents =
+  | { type: 'FETCH'; payload: LatLng[] }
+  | { type: 'RETRY' }
+  | { type: 'CLEAR_ROUTES' };
 
-type RoutesService= {
+type RoutesService = {
   getRoute: { data: Feature<LineString, GeoJsonProperties> };
 };
 
@@ -81,7 +81,7 @@ export const routesMachine = createMachine(
     schema: {
       context: {} as RoutesContext,
       events: {} as RoutesEvents,
-      services: {} as RoutesService
+      services: {} as RoutesService,
     },
     context: {
       markers: [],
@@ -112,7 +112,7 @@ export const routesMachine = createMachine(
           CLEAR_ROUTES: {
             target: 'idle',
             actions: ['abortFetch'],
-          }
+          },
         },
         invoke: {
           id: 'getRoute',
