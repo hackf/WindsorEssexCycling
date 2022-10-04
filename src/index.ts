@@ -1,7 +1,7 @@
 import L, { LatLng, LeafletMouseEvent } from 'leaflet';
 import { interpret } from 'xstate';
-import { markersMachine } from './machines';
-import { routesMachine } from './routemachine';
+import { markersMachine } from './markersMachine';
+import { routesMachine } from './routeMachine';
 
 import '@bagage/leaflet.restoreview';
 import 'leaflet-fullhash';
