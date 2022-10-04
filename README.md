@@ -10,6 +10,16 @@ The website can be view at: [windsoressexcycling.ca](https://windsoressexcycling
 
 > An LTS version of `nodejs` and `npm` is required to run the development server.
 
+Create a file called `.env` in the project root with contents:
+
+> Check out [Vite's documentation](https://vitejs.dev/guide/env-and-mode.html) for more information on how it handles env variables
+
+```.env
+VITE_BROUTER_ENDPOINT=http://127.0.0.1:17777
+```
+
+> This assumes that you're running a standalone brouter server using the steps found below in the [Standalone BRouter Server](#standalone-brouter-server) section.
+
 To install the dependencies and start the dev server, execute the following commands:
 
     npm ci
