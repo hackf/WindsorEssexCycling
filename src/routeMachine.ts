@@ -7,6 +7,8 @@ import type {
   GeoJsonProperties,
 } from 'geojson';
 
+const brouterEndpoint = import.meta.env.VITE_BROUTER_ENDPOINT;
+
 function roundToNearestThousand(n: number) {
   return Math.round(n * 10000) / 10000;
 }
@@ -37,7 +39,7 @@ const fetchRoute = async (markers: LatLng[], signal: AbortSignal) => {
   params.set('alternativeidx', '0');
   params.set('profile', 'trekking');
   params.set('format', 'geojson');
-  const url = new URL(`http://127.0.0.1:17777/brouter?${params.toString()}`);
+  const url = new URL(`${brouterEndpoint}/brouter?${params.toString()}`);
   const response = await fetch(url.toString(), { signal });
 
   if (!response.ok) {
