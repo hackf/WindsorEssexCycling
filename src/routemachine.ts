@@ -107,6 +107,10 @@ export const routesMachine = createMachine(
             target: 'loading',
             actions: ['abortFetch', 'setMarkers'],
           },
+          CLEAR_ROUTES: {
+            target: 'idle',
+            actions: ['abortFetch'],
+          }
         },
         invoke: {
           id: 'getRoute',

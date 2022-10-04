@@ -25,7 +25,7 @@ export interface Typegen0 {
     delays: never;
   };
   eventsCausingActions: {
-    abortFetch: 'FETCH';
+    abortFetch: 'CLEAR_ROUTES' | 'FETCH';
     clearRoute: 'CLEAR_ROUTES' | 'FETCH' | 'xstate.stop';
     createAbortController: 'FETCH' | 'RETRY';
     setError: 'error.platform.getRoute';
