@@ -266,6 +266,9 @@ document.addEventListener('DOMContentLoaded', function () {
       VERSION
   );
 
+  // No type deps for the restore view module
+  // We should replace it with something else
+  // @ts-ignore
   if (!map.restoreView()) {
     // Default view on Essex County, ON.
     map.setView([42.1659, -82.6633], 11);
@@ -275,6 +278,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const allMapLayers = {
     cyclosm: cyclosm,
   };
+  // No type deps for the hash module
+  // We should replace it with something else
+  // @ts-ignore
   L.hash(map, allMapLayers);
 
   // Add a scale
