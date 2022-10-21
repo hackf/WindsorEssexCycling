@@ -2,7 +2,7 @@
   display: inline-block;
   height: 2em;
   width: 2em;
-  background: url('./symbols/shields/rcn-junction_1x1.svg') no-repeat;
+  background: url('/symbols/shields/rcn-junction_1x1.svg') no-repeat;
   background-position: center;
   padding-top: 1em;
   color: white;
@@ -21,14 +21,14 @@
 
 .bicycle-zerba-crossing {
   background-color: #0092da;
-  -webkit-mask: url('./symbols/osmfr/crossing.svg') no-repeat center;
-  mask: url('./symbols/osmfr/crossing.svg') no-repeat center;
+  -webkit-mask: url('/symbols/osmfr/crossing.svg') no-repeat center;
+  mask: url('/symbols/osmfr/crossing.svg') no-repeat center;
 }
 
 .train-station {
   background-color: #555;
-  -webkit-mask: url('./symbols/openstreetmap-carto/square.svg') no-repeat center;
-  mask: url('./symbols/openstreetmap-carto/square.svg') no-repeat center;
+  -webkit-mask: url('/symbols/openstreetmap-carto/square.svg') no-repeat center;
+  mask: url('/symbols/openstreetmap-carto/square.svg') no-repeat center;
 }
 
 #full-legend tr > td:first-child {

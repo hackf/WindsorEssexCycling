@@ -13,6 +13,9 @@ import './../node_modules/leaflet-easybutton/src/easy-button.css';
 import './../node_modules/leaflet/dist/leaflet.css';
 import './../node_modules/tingle.js/dist/tingle.css';
 
+import markerImage from './../node_modules/leaflet/dist/images/marker-icon.png';
+import markerShadowImage from './../node_modules/leaflet/dist/images/marker-shadow.png';
+
 import './legend.css';
 import './styles.css';
 
@@ -56,9 +59,6 @@ function shouldShowModalOnStartup() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  // ============
-  // Handle modal
-  // ============
   const modal = new tingle.modal({
     footer: false,
     closeMethods: ['overlay', 'button', 'escape'],
@@ -75,10 +75,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // ==========
-  // Handle map
-  // ==========
-  // Available tiles definition
   const cyclosm = L.tileLayer(
     'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
     {
@@ -89,31 +85,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   );
 
-  // Interpret the machine, and add a listener for whenever a transition occurs.
-  const service = interpret(markersMachine);
-  const routeService = interpret(routesMachine);
-
-  function addMarker(e: LeafletMouseEvent) {
-    service.send({ type: 'ADD_ON_CLICK', payload: e.latlng });
-  }
-
   const map = new L.Map('map', {
     zoomControl: true,
-    //layers: [cyclosm],
     layers: [cyclosm],
   });
 
-  // Set up routing / edit / help / legend buttons
-  L.easyButton(
-    'fa-route',
-    function () {
-      window.open(
-        'http://brouter.de/brouter-web/' + window.location.hash,
-        '_blank'
-      );
-    },
-    'Create an itinerary with BRouter'
-  ).addTo(map);
   L.easyButton(
     'fa-edit',
     function () {
@@ -150,67 +126,107 @@ document.addEventListener('DOMContentLoaded', function () {
     'About'
   ).addTo(map);
 
-  const markers = L.layerGroup();
-  let buttons: L.Control[] = [];
+  // Both images are locationed in the same folder, so we can use one of them
+  // to get the base path for both
+  const basePath = markerImage.split('/').slice(0, -1).join('/');
+  const markerIcon = new L.Icon.Default({
+    // imagePath is what leaflet will prepend to the icon image paths
+    imagePath: `${basePath}/`,
+    // Since imagePath is the complete path, the iconUrl and shadowUrl options
+    // should be set to only the image file names
+    iconUrl: markerImage.split('/').slice(-1)[0],
+    shadowUrl: markerShadowImage.split('/').slice(-1)[0],
+  });
 
-  service.onTransition((state) => {
-    buttons.forEach((button) => map.removeControl(button));
-    buttons = [];
+  const markerService = interpret(markersMachine);
+  const routeService = interpret(routesMachine);
 
-    const dragButton = L.easyButton(
-      'fa-up-down-left-right',
-      function () {
-        if (state.matches('drag')) {
-          service.send({ type: 'GO_TO_IDLE' });
-        } else {
-          service.send({ type: 'DRAG_MARKER' });
-        }
+  interface ButtonConfig {
+    icon: string;
+    onClickFn: () => void;
+    altText: string;
+  }
+
+  function mapButtonController(map: L.Map) {
+    let buttonControls: L.Control[] = [];
+    return {
+      addButtonsToMap(buttons: ButtonConfig[]) {
+        buttonControls.forEach((button) => map.removeControl(button));
+
+        buttonControls = buttons.map((config) =>
+          L.easyButton(config.icon, config.onClickFn, config.altText)
+        );
+
+        buttonControls.forEach((button) => button.addTo(map));
       },
-      'Drag Marker'
-    );
-    buttons.push(dragButton);
+    };
+  }
 
-    const addButton = L.easyButton(
-      'fa-add',
-      function () {
-        if (state.matches('add')) {
-          service.send({ type: 'GO_TO_IDLE' });
-        } else {
-          service.send({ type: 'ADD_MARKER' });
+  function markerLayerController(map: L.Map) {
+    const markerGroup = L.layerGroup();
+    return {
+      addMarkersToMap(markers: L.Marker[]) {
+        map.removeLayer(markerGroup);
+        markerGroup.clearLayers();
+
+        for (const marker of markers) {
+          markerGroup.addLayer(marker);
         }
+        map.addLayer(markerGroup);
       },
-      'Add Marker'
-    );
-    buttons.push(addButton);
+    };
+  }
 
-    const removeButton = L.easyButton(
-      'fa-remove',
-      function () {
-        if (state.matches('delete')) {
-          service.send({ type: 'GO_TO_IDLE' });
-        } else {
-          service.send({ type: 'DELETE_MARKER' });
-        }
+  const { addButtonsToMap } = mapButtonController(map);
+  const { addMarkersToMap } = markerLayerController(map);
+
+  markerService.onTransition((state) => {
+    addButtonsToMap([
+      {
+        icon: 'fa-up-down-left-right',
+        onClickFn: function () {
+          if (state.matches('drag')) {
+            markerService.send({ type: 'GO_TO_IDLE' });
+          } else {
+            markerService.send({ type: 'DRAG_MARKER' });
+          }
+        },
+        altText: 'Drag Marker',
       },
-      'Delete Marker'
-    );
-    buttons.push(removeButton);
-
-    buttons.forEach((button) => button.addTo(map));
+      {
+        icon: 'fa-add',
+        onClickFn: function () {
+          if (state.matches('add')) {
+            markerService.send({ type: 'GO_TO_IDLE' });
+          } else {
+            markerService.send({ type: 'ADD_MARKER' });
+          }
+        },
+        altText: 'Add Marker',
+      },
+      {
+        icon: 'fa-remove',
+        onClickFn: function () {
+          if (state.matches('delete')) {
+            markerService.send({ type: 'GO_TO_IDLE' });
+          } else {
+            markerService.send({ type: 'DELETE_MARKER' });
+          }
+        },
+        altText: 'Delete Marker',
+      },
+    ]);
 
     if (state.changed) {
-      map.removeLayer(markers);
-      markers.clearLayers();
-
-      state.context.markers
-        .map((markerData, idx) => {
+      addMarkersToMap(
+        state.context.markers.map((markerData, idx) => {
           const marker: L.Marker = state.matches('drag')
-            ? L.marker(markerData, { draggable: true })
-            : L.marker(markerData);
+            ? L.marker(markerData, { draggable: true, icon: markerIcon })
+            : L.marker(markerData, { icon: markerIcon });
 
           if (state.matches('drag')) {
             marker.addOneTimeEventListener('dragend', (e) => {
-              service.send({
+              markerService.send({
                 type: 'DROP',
                 idx,
                 payload: e.target.getLatLng(),
@@ -218,19 +234,17 @@ document.addEventListener('DOMContentLoaded', function () {
             });
           } else if (state.matches('delete')) {
             marker.addOneTimeEventListener('click', () =>
-              service.send({ type: 'DELETE_ON_CLICK', idx })
+              markerService.send({ type: 'DELETE_ON_CLICK', idx })
             );
           }
           return marker;
         })
-        .forEach((marker) => {
-          markers.addLayer(marker);
-        });
-
-      map.addLayer(markers);
+      );
 
       if (state.matches('add')) {
-        map.addOneTimeEventListener('click', addMarker);
+        map.addOneTimeEventListener('click', (e: LeafletMouseEvent) => {
+          markerService.send({ type: 'ADD_ON_CLICK', payload: e.latlng });
+        });
       }
 
       // Only request a route while in the idle state
@@ -247,18 +261,26 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  let route: L.Polyline = L.polyline([]);
+  function routeLayerController(map: L.Map) {
+    let routeLine: L.Polyline = L.polyline([]);
+    return {
+      addRouteToMap(route: L.LatLngTuple[] | null) {
+        map.removeLayer(routeLine);
+        if (route) {
+          routeLine = L.polyline(route, { color: 'red' });
+          map.addLayer(routeLine);
+        }
+      },
+    };
+  }
+
+  const { addRouteToMap } = routeLayerController(map);
 
   routeService.onTransition((state) => {
-    map.removeLayer(route);
-    route = state.context.route
-      ? L.polyline(state.context.route, { color: 'red' })
-      : L.polyline([]);
-    map.addLayer(route);
+    addRouteToMap(state.context.route);
   });
 
-  // Start the service
-  service.start();
+  markerService.start();
   routeService.start();
 
   map.attributionControl.setPrefix(
@@ -286,9 +308,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // Add a scale
   L.control.scale().addTo(map);
 
-  // =============
-  // Handle legend
-  // =============
   function handleResize() {
     let shouldLegendOpen = true;
 
