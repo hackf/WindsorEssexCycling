@@ -37,7 +37,11 @@ const fetchRoute = async (markers: LatLng[], signal: AbortSignal) => {
       .join('|')
   );
   params.set('alternativeidx', '0');
-  params.set('profile', 'trekking');
+  // To use a custom profile, eg "trekking_we", the profile name needs to have
+  // the prefix of "custom_", otherwise brouter won't know it's custom
+  // See: https://github.com/abrensch/brouter/blob/master/brouter-server/src/main/java/btools/server/request/ProfileUploadHandler.java#L24
+  // Also: https://github.com/abrensch/brouter/blob/master/brouter-server/src/main/java/btools/server/request/ServerHandler.java#L51 
+  params.set('profile', 'custom_trekking_we');
   params.set('format', 'geojson');
   const url = new URL(`${brouterEndpoint}/brouter?${params.toString()}`);
   const response = await fetch(url.toString(), { signal });

@@ -40,27 +40,42 @@ A simple web server can be used to test the build by executing the following com
 
 This section is geared towards documentation how to configure and run the Brouter HTTPServer. This server is used to provide routing information.
 
-### Step 1: Build the docker image
+### Building the docker image
 
 The docker image requires two [build arguments](https://docs.docker.com/engine/reference/commandline/build/#set-build-time-variables---build-arg), LAT and LNG. These arguments are used to download a segment of the world that will be used by Brouter to provide routing. As of right now, the docker image only downloads one of these segment files because all of the WE area is contained in one slice.  For WE the values are: `N40` and `W85`. Go [here](http://brouter.de/brouter/segments4/) if you'd like to see what other segments are available.
-The routing segment files provisioned by Brouter are organized in a 5*5 degrees, with the filename containing the southwest corner of the square.  
+The routing segment files provisioned by Brouter are organized in a 5*5 degrees, with the filename containing the southwest corner of the square.
 The docker image will download the required segment file and place it there Brouter expects it to be located. Below is an example on how to build the Brouter image:
 
 ```sh
 docker build -t brouter-server:N40_W85 --build-arg LAT=N40 --build-arg LNG=W85 .
 ```
 
-### Step 2: Run the container
+### Running the container
 
 To run the Brouter routing server container, run the following command:
 
 ```sh
-docker run -p 127.0.0.1:17777:17777 brouter-server:N40_W85
+docker run --rm --name brouter -it -p 17777:17777 brouter-server:N40_W85
 ```
 
-### Step 3: Make the call for routing
+### Testing custom profiles
 
-The complete set of API end points exposed by Brouter server are documented [here](https://github.com/abrensch/brouter/blob/master/brouter-server/src/main/java/btools/server/request/ServerHandler.java).  
+Custom profiles can be found in the `brouter_profiles` directory in the project root. These profiles are tailored to work while within the Windsor Essex Area.
+
+To test modifications to these profiles or to test new profiles, place the files into the `brouter_profiles` or into another directory on your system. Using the command below will override the custom profile directory. 
+
+> If you're using a different directory then `brouter_profiles`, make sure to update the volume command below to point to that directory.
+
+```sh
+docker run --rm --name brouter -it -p 17777:17777 -v "$(pwd)"/brouter_profiles:/opt/brouter/profiles2/custom
+profiles/ brouter-server:N40_W85
+```
+
+> Brouter doesn't seem to pick up on changes to the profiles. So it's best to restart the server every time changes to the custom profiles are made.
+
+### Verify that the server is running
+
+The complete set of API end points exposed by Brouter server are documented [here](https://github.com/abrensch/brouter/blob/master/brouter-server/src/main/java/btools/server/request/ServerHandler.java).
 An example url for Windsor-Essex is:
 
 ```url
@@ -70,6 +85,8 @@ http://127.0.0.1:17777/brouter?lonlats=-82.992005,42.303384%20|-82.989140,42.306
 This gives the url can be polled to get the routing directions in the form of a `geojson`.  
 A sample response looks like :
 
+<details>
+<summary>GeoJSON payload example</summary>
 ```json
 {
     "type": "FeatureCollection",
@@ -186,3 +203,4 @@ A sample response looks like :
     ]
 }
 ```
+</details>
