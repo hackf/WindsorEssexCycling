@@ -10,7 +10,7 @@ interface ButtonConfig {
 interface ButtonUpdateConfig
   extends Partial<Omit<ButtonConfig, 'id'>>,
     Pick<ButtonConfig, 'id'> {
-  active: boolean;
+  state: 'active' | 'disabled' | 'normal';
 }
 
 function createIcon(iconClass: string) {
@@ -96,10 +96,15 @@ export function createButtonGroup(map: L.Map, buttonConfigs: ButtonConfig[]) {
           buttonMap.set(buttonConfig.id, { element, onClickFn: buttonConfig.onClickFn });
         }
 
-        if (buttonConfig.active) {
+        element.classList.remove('button-active');
+        element.classList.remove('leaflet-disabled');
+
+        if (buttonConfig.state == 'active') {
           element.classList.add('button-active');
-        } else {
-          element.classList.remove('button-active');
+        }
+
+        if (buttonConfig.state == 'disabled') {
+          element.classList.add('leaflet-disabled');
         }
       }
     },

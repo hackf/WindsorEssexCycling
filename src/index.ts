@@ -171,18 +171,25 @@ document.addEventListener('DOMContentLoaded', function () {
     updateMarkerControls([
       {
         id: 'drag',
-        onClickFn () {
+        onClickFn(event: MouseEvent) {
+          event.preventDefault();
+          event.stopPropagation();
+
           if (state.matches('drag')) {
             markerService.send({ type: 'GO_TO_IDLE' });
           } else {
             markerService.send({ type: 'DRAG_MARKER' });
           }
         },
-        active: state.matches('drag'),
+        state: state.matches('drag')
+          ? 'active'
+          : state.context.markers.length == 0
+          ? 'disabled'
+          : 'normal',
       },
       {
         id: 'add',
-        onClickFn (event: MouseEvent) {
+        onClickFn(event: MouseEvent) {
           // Need to prevent the Event from bubbling to the map element
           // otherwise the map will also handle the Event which will place
           // a marker directly under the add button
@@ -195,18 +202,29 @@ document.addEventListener('DOMContentLoaded', function () {
             markerService.send({ type: 'ADD_MARKER' });
           }
         },
-        active: state.matches('add'),
+        state: state.matches('add')
+          ? 'active'
+          : state.context.markers.length == state.context.max
+          ? 'disabled'
+          : 'normal',
       },
       {
         id: 'delete',
-        onClickFn () {
+        onClickFn(event: MouseEvent) {
+          event.preventDefault();
+          event.stopPropagation();
+
           if (state.matches('delete')) {
             markerService.send({ type: 'GO_TO_IDLE' });
           } else {
             markerService.send({ type: 'DELETE_MARKER' });
           }
         },
-        active: state.matches('delete'),
+        state: state.matches('delete')
+          ? 'active'
+          : state.context.markers.length == 0
+          ? 'disabled'
+          : 'normal',
       },
     ]);
 
@@ -238,13 +256,15 @@ document.addEventListener('DOMContentLoaded', function () {
         map.addOneTimeEventListener('click', (e: LeafletMouseEvent) => {
           markerService.send({ type: 'ADD_ON_CLICK', payload: e.latlng });
         });
+      } else {
+        map.removeEventListener('click');
       }
 
       // Only request a route while in the idle state
       // This fixes the flickering (route being removed and added) when the
       // state transitions. Realisically, the route should only be fetched after
       // changes to the markers which means the machine should be in the idle state
-      if (state.matches('idle') && state.context.markers.length >= 2) {
+      if (state.context.markersChanged && state.context.markers.length >= 2) {
         routeService.send({ type: 'FETCH', payload: state.context.markers });
       }
 
