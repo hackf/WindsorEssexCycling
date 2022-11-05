@@ -1,4 +1,4 @@
-import L, { LeafletMouseEvent } from 'leaflet';
+import L, { LeafletMouseEvent, LatLngTuple } from 'leaflet';
 import { interpret } from 'xstate';
 import { markersMachine } from './markersMachine';
 import { routesMachine } from './routeMachine';
@@ -11,14 +11,12 @@ import tingle from 'tingle.js';
 import './../node_modules/leaflet/dist/leaflet.css';
 import './../node_modules/tingle.js/dist/tingle.css';
 
-import markerImage from './../node_modules/leaflet/dist/images/marker-icon.png';
-import markerShadowImage from './../node_modules/leaflet/dist/images/marker-shadow.png';
-
 import './legend.css';
 import './styles.css';
 import { createButtonGroup } from './leaflet_button_control';
+import { divIconFactory } from './divIconFactory';
 
-const VERSION = 'v0.1'; // TODO: Bump when pushing new version in production
+const VERSION = 'v0.2'; // TODO: Bump when pushing new version in production
 
 function checkQuerySelector(
   parent: Element | Document,
@@ -135,18 +133,6 @@ document.addEventListener('DOMContentLoaded', function () {
     },
   ]);
 
-  // Both images are locationed in the same folder, so we can use one of them
-  // to get the base path for both
-  const basePath = markerImage.split('/').slice(0, -1).join('/');
-  const markerIcon = new L.Icon.Default({
-    // imagePath is what leaflet will prepend to the icon image paths
-    imagePath: `${basePath}/`,
-    // Since imagePath is the complete path, the iconUrl and shadowUrl options
-    // should be set to only the image file names
-    iconUrl: markerImage.split('/').slice(-1)[0],
-    shadowUrl: markerShadowImage.split('/').slice(-1)[0],
-  });
-
   const markerService = interpret(markersMachine);
   const routeService = interpret(routesMachine);
 
@@ -230,10 +216,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (state.changed) {
       addMarkersToMap(
-        state.context.markers.map((markerData, idx) => {
+        state.context.markers.map((markerData, idx, markers) => {
+          const icon =
+            idx == 0
+              ? divIconFactory(idx + 1, '#00ff00')
+              : idx + 1 == markers.length
+              ? divIconFactory(idx + 1, '#0000ff')
+              : divIconFactory(idx + 1, '#ff0000');
+
           const marker: L.Marker = state.matches('drag')
-            ? L.marker(markerData, { draggable: true, icon: markerIcon })
-            : L.marker(markerData, { icon: markerIcon });
+            ? L.marker(markerData, { draggable: true, icon })
+            : L.marker(markerData, { icon });
 
           if (state.matches('drag')) {
             marker.addOneTimeEventListener('dragend', (e) => {
@@ -277,9 +270,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function routeLayerController(map: L.Map) {
     let routeLine: L.Polyline = L.polyline([]);
     return {
-      addRouteToMap(route: L.LatLngTuple[] | null) {
+      addRouteToMap(route: L.LatLngTuple[] | null, isLoading: boolean) {
         map.removeLayer(routeLine);
-        if (route) {
+        if (isLoading && route) {
+          routeLine = L.polyline(route, { color: 'blue' });
+          map.addLayer(routeLine);
+        } else if (route) {
           routeLine = L.polyline(route, { color: 'red' });
           map.addLayer(routeLine);
         }
@@ -290,7 +286,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const { addRouteToMap } = routeLayerController(map);
 
   routeService.onTransition((state) => {
-    addRouteToMap(state.context.route);
+    const isLoading = state.matches('loading');
+    const route = isLoading
+      ? state.context.markers.map(
+          (latlng) => [latlng.lat, latlng.lng] as LatLngTuple
+        )
+      : state.context.route;
+    addRouteToMap(route, isLoading);
   });
 
   markerService.start();

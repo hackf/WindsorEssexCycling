@@ -18,8 +18,9 @@ type MarkerEvents =
 
 export const markersMachine = createMachine(
   {
-    predictableActionArguments: true,
     id: 'markers-machine',
+    strict: true,
+    predictableActionArguments: true,
     // XState Typegen
     // See: https://xstate.js.org/docs/guides/typescript.html#typegen
     tsTypes: {} as import('./markersMachine.typegen').Typegen0,
@@ -156,8 +157,8 @@ export const markersMachine = createMachine(
       },
     },
     actions: {
-      markersHaveChanged: assign({ markersChanged: true }),
-      markersHaveNotChanged: assign({ markersChanged: false }),
+      markersHaveChanged: assign({ markersChanged: (_context) => true }),
+      markersHaveNotChanged: assign({ markersChanged: (_context) => false }),
       delete_marker: assign({
         markers: (context, event) => {
           return context.markers.filter((_, idx) => event.idx !== idx);
@@ -170,10 +171,9 @@ export const markersMachine = createMachine(
       }),
       update_marker_latlng: assign({
         markers: (context, event) => [
-          // Remove the LatLng with the same index. This will be the state of the marker that was just
-          // dragged then dropped. Then we add it back in with the new LatLng object.
-          ...context.markers.filter((_marker, idx) => event.idx !== idx),
+          ...context.markers.slice(0, event.idx),
           event.payload,
+          ...context.markers.slice(event.idx + 1),
         ],
       }),
     },
