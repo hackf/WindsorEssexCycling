@@ -5,11 +5,9 @@ import { routesMachine } from './routeMachine';
 
 import '@bagage/leaflet.restoreview';
 import 'leaflet-fullhash';
-import 'leaflet-easybutton';
 
 import tingle from 'tingle.js';
 
-import './../node_modules/leaflet-easybutton/src/easy-button.css';
 import './../node_modules/leaflet/dist/leaflet.css';
 import './../node_modules/tingle.js/dist/tingle.css';
 
@@ -18,6 +16,7 @@ import markerShadowImage from './../node_modules/leaflet/dist/images/marker-shad
 
 import './legend.css';
 import './styles.css';
+import { createButtonGroup } from './leaflet_button_control';
 
 const VERSION = 'v0.1'; // TODO: Bump when pushing new version in production
 
@@ -90,41 +89,51 @@ document.addEventListener('DOMContentLoaded', function () {
     layers: [cyclosm],
   });
 
-  L.easyButton(
-    'fa-edit',
-    function () {
-      window.open(
-        'https://www.openstreetmap.org/edit' + window.location.hash,
-        '_blank'
-      );
+  const { update: updateMarkerControls } = createButtonGroup(map, [
+    {
+      id: 'drag',
+      icon: 'fa-up-down-left-right',
+      altText: 'Drag Marker',
     },
-    'Edit the map'
-  ).addTo(map);
-
-  L.easyButton(
-    'fa-question',
-    function () {
-      const modal = new tingle.modal({
-        footer: false,
-        closeMethods: ['overlay', 'button', 'escape'],
-        closeLabel: 'Go to map',
-      });
-
-      modal.setContent(
-        checkQuerySelector(document, '#legend .iframe').innerHTML
-      );
-      modal.open();
+    {
+      id: 'add',
+      icon: 'fa-add',
+      altText: 'Add Marker',
     },
-    'Legend'
-  ).addTo(map);
-
-  L.easyButton(
-    'fa-info',
-    function () {
-      modal.open();
+    {
+      id: 'delete',
+      icon: 'fa-trash',
+      altText: 'Delete Marker',
     },
-    'About'
-  ).addTo(map);
+  ]);
+
+  createButtonGroup(map, [
+    {
+      id: 'question',
+      icon: 'fa-question',
+      onClickFn() {
+        const modal = new tingle.modal({
+          footer: false,
+          closeMethods: ['overlay', 'button', 'escape'],
+          closeLabel: 'Go to map',
+        });
+
+        modal.setContent(
+          checkQuerySelector(document, '#legend .iframe').innerHTML
+        );
+        modal.open();
+      },
+      altText: 'Legend',
+    },
+    {
+      id: 'info',
+      icon: 'fa-info',
+      onClickFn() {
+        modal.open();
+      },
+      altText: 'About',
+    },
+  ]);
 
   // Both images are locationed in the same folder, so we can use one of them
   // to get the base path for both
@@ -141,27 +150,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const markerService = interpret(markersMachine);
   const routeService = interpret(routesMachine);
 
-  interface ButtonConfig {
-    icon: string;
-    onClickFn: () => void;
-    altText: string;
-  }
-
-  function mapButtonController(map: L.Map) {
-    let buttonControls: L.Control[] = [];
-    return {
-      addButtonsToMap(buttons: ButtonConfig[]) {
-        buttonControls.forEach((button) => map.removeControl(button));
-
-        buttonControls = buttons.map((config) =>
-          L.easyButton(config.icon, config.onClickFn, config.altText)
-        );
-
-        buttonControls.forEach((button) => button.addTo(map));
-      },
-    };
-  }
-
   function markerLayerController(map: L.Map) {
     const markerGroup = L.layerGroup();
     return {
@@ -177,43 +165,48 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
-  const { addButtonsToMap } = mapButtonController(map);
   const { addMarkersToMap } = markerLayerController(map);
 
   markerService.onTransition((state) => {
-    addButtonsToMap([
+    updateMarkerControls([
       {
-        icon: 'fa-up-down-left-right',
-        onClickFn: function () {
+        id: 'drag',
+        onClickFn () {
           if (state.matches('drag')) {
             markerService.send({ type: 'GO_TO_IDLE' });
           } else {
             markerService.send({ type: 'DRAG_MARKER' });
           }
         },
-        altText: 'Drag Marker',
+        active: state.matches('drag'),
       },
       {
-        icon: 'fa-add',
-        onClickFn: function () {
+        id: 'add',
+        onClickFn (event: MouseEvent) {
+          // Need to prevent the Event from bubbling to the map element
+          // otherwise the map will also handle the Event which will place
+          // a marker directly under the add button
+          event.preventDefault();
+          event.stopPropagation();
+
           if (state.matches('add')) {
             markerService.send({ type: 'GO_TO_IDLE' });
           } else {
             markerService.send({ type: 'ADD_MARKER' });
           }
         },
-        altText: 'Add Marker',
+        active: state.matches('add'),
       },
       {
-        icon: 'fa-remove',
-        onClickFn: function () {
+        id: 'delete',
+        onClickFn () {
           if (state.matches('delete')) {
             markerService.send({ type: 'GO_TO_IDLE' });
           } else {
             markerService.send({ type: 'DELETE_MARKER' });
           }
         },
-        altText: 'Delete Marker',
+        active: state.matches('delete'),
       },
     ]);
 
