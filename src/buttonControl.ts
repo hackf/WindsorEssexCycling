@@ -21,6 +21,7 @@ function createIcon(iconClass: string) {
 
 function createButton(config: ButtonConfig) {
   const button = L.DomUtil.create('a');
+  button.classList.add('marker-control-button');
   button.setAttribute('title', config.altText);
   button.setAttribute('role', 'button');
   button.setAttribute('aria-label', config.altText);
@@ -42,7 +43,7 @@ export function createButtonGroup(map: L.Map, buttonConfigs: ButtonConfig[]) {
   const Control = L.Control.extend({
     onAdd(_map: L.Map) {
       const containerDiv = L.DomUtil.create('div');
-      containerDiv.classList.add('leaflet-control', 'leaflet-bar');
+      containerDiv.classList.add('leaflet-control', 'leaflet-bar', 'marker-controls');
       for (let buttonConfig of buttonConfigs) {
         const element = createButton(buttonConfig);
         buttonMap.set(buttonConfig.id, {

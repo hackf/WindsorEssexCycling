@@ -5,7 +5,7 @@ import tingle from 'tingle.js';
 import { markersMachine } from './markersMachine';
 import { routesMachine } from './routeMachine';
 
-import { createButtonGroup } from './leaflet_button_control';
+import { createButtonGroup } from './buttonControl';
 import { divIconFactory } from './divIconFactory';
 import { isLocalStorageAvailable } from './localStorage';
 
@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     {
       id: 'add',
-      icon: 'fa-add',
+      icon: 'fa-location-dot',
       altText: 'Add Marker',
     },
     {
