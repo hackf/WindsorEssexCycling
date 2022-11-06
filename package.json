@@ -11,9 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@bagage/leaflet.restoreview": "1.0.1",
     "leaflet": "1.7.1",
-    "leaflet-fullhash": "1.0.0",
     "tingle.js": "0.16.0",
     "xstate": "^4.33.6"
   },

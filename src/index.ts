@@ -1,20 +1,20 @@
 import L, { LeafletMouseEvent, LatLngTuple } from 'leaflet';
 import { interpret } from 'xstate';
+import tingle from 'tingle.js';
+
 import { markersMachine } from './markersMachine';
 import { routesMachine } from './routeMachine';
 
-import '@bagage/leaflet.restoreview';
-import 'leaflet-fullhash';
-
-import tingle from 'tingle.js';
+import { createButtonGroup } from './leaflet_button_control';
+import { divIconFactory } from './divIconFactory';
+import { isLocalStorageAvailable } from './localStorage';
 
 import './../node_modules/leaflet/dist/leaflet.css';
 import './../node_modules/tingle.js/dist/tingle.css';
 
 import './legend.css';
 import './styles.css';
-import { createButtonGroup } from './leaflet_button_control';
-import { divIconFactory } from './divIconFactory';
+import {restoreMapView} from './restoreMapView';
 
 const VERSION = 'v0.2'; // TODO: Bump when pushing new version in production
 
@@ -29,18 +29,6 @@ function checkQuerySelector(
     throw new Error(`"${selector}" did not match any elements on parent.`);
   }
   return element;
-}
-
-function isLocalStorageAvailable() {
-  try {
-    const storageTest = '__storage_test__';
-    window.localStorage.setItem(storageTest, storageTest);
-    window.localStorage.removeItem(storageTest);
-    return true;
-  } catch (e) {
-    console.warn('Your browser blocks access to localStorage');
-    return false;
-  }
 }
 
 const hasLocalStorage = isLocalStorageAvailable();
@@ -299,28 +287,12 @@ document.addEventListener('DOMContentLoaded', function () {
   routeService.start();
 
   map.attributionControl.setPrefix(
-    '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> ' +
-      VERSION
+    '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a>'
   );
 
-  // No type deps for the restore view module
-  // We should replace it with something else
-  // @ts-ignore
-  if (!map.restoreView()) {
-    // Default view on Essex County, ON.
-    map.setView([42.1659, -82.6633], 11);
-  }
+  restoreMapView(map, [42.1659, -82.6633], 11);
 
-  // Set up hash plugin
-  const allMapLayers = {
-    cyclosm: cyclosm,
-  };
-  // No type deps for the hash module
-  // We should replace it with something else
-  // @ts-ignore
-  L.hash(map, allMapLayers);
-
-  // Add a scale
+  // Scale control in the bottom left
   L.control.scale().addTo(map);
 
   function handleResize() {
