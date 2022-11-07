@@ -41,6 +41,7 @@ export const markersMachine = createMachine(
             {
               cond: 'noMoreThanNMarkers',
               target: 'add',
+              actions: 'markersHaveNotChanged',
             },
             {
               actions: 'markersHaveNotChanged',

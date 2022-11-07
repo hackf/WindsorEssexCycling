@@ -14,7 +14,8 @@ import './../node_modules/tingle.js/dist/tingle.css';
 
 import './legend.css';
 import './styles.css';
-import {restoreMapView} from './restoreMapView';
+import { restoreMapView } from './restoreMapView';
+import { restoreRouteMarkers, saveRouteMarkers } from './saveRouteMarkers';
 
 const VERSION = 'v0.2'; // TODO: Bump when pushing new version in production
 
@@ -121,7 +122,14 @@ document.addEventListener('DOMContentLoaded', function () {
     },
   ]);
 
-  const markerService = interpret(markersMachine);
+  const savedMarkers = restoreRouteMarkers();
+  const markerService = interpret(
+    markersMachine.withContext({
+      markers: savedMarkers,
+      max: 5,
+      markersChanged: savedMarkers.length > 0,
+    })
+  );
   const routeService = interpret(routesMachine);
 
   function markerLayerController(map: L.Map) {
@@ -202,7 +210,10 @@ document.addEventListener('DOMContentLoaded', function () {
       },
     ]);
 
-    if (state.changed) {
+    // events array will be empty on the first transtion
+    // Since there could be saved markers the code needs to
+    // run so that those markers are added to the map
+    if (state.changed || state.events.length === 0) {
       addMarkersToMap(
         state.context.markers.map((markerData, idx, markers) => {
           const icon =
@@ -251,6 +262,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (state.context.markers.length < 2) {
         routeService.send({ type: 'CLEAR_ROUTES' });
+      }
+
+      if (state.context.markersChanged) {
+        saveRouteMarkers(state.context.markers);
       }
     }
   });
