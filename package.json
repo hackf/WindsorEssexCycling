@@ -11,17 +11,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@bagage/leaflet.restoreview": "1.0.1",
-    "leaflet": "1.7.1",
-    "leaflet-easybutton": "2.4.0",
-    "leaflet-fullhash": "1.0.0",
+    "leaflet": "1.9.2",
     "tingle.js": "0.16.0",
-    "xstate": "^4.33.6"
+    "xstate": "4.34.0"
   },
   "devDependencies": {
     "@xstate/cli": "^0.3.3",
     "@types/geojson": "^7946.0.10",
-    "@types/leaflet": "1.7.9",
+    "@types/leaflet": "1.9.0",
     "@types/tingle.js": "0.13.2",
     "@typescript-eslint/eslint-plugin": "^5.15.0",
     "@typescript-eslint/parser": "^5.15.0",

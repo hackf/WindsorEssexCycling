@@ -4,7 +4,10 @@
   width: 2em;
   background: url('/symbols/shields/rcn-junction_1x1.svg') no-repeat;
   background-position: center;
-  padding-top: 1em;
+  text-align: center;
+  padding-top: 0.25em;
+  vertical-align: middle;
+  font-size: 1em;
   color: white;
   font-family: sans-serif;
   font-weight: 500;

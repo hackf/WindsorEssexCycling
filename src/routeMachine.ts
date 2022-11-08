@@ -79,8 +79,8 @@ type RoutesService = {
 export const routesMachine = createMachine(
   {
     id: 'routes-machine',
+    strict: true,
     predictableActionArguments: true,
-    initial: 'idle',
     tsTypes: {} as import('./routeMachine.typegen').Typegen0,
     schema: {
       context: {} as RoutesContext,
@@ -93,6 +93,7 @@ export const routesMachine = createMachine(
       controller: null,
       error: null,
     },
+    initial: 'idle',
     states: {
       idle: {
         exit: ['clearRoute'],

@@ -3,6 +3,8 @@ import { createMachine, assign } from 'xstate';
 
 interface MarkerContext {
   markers: LatLng[];
+  max: number;
+  markersChanged: boolean;
 }
 
 type MarkerEvents =
@@ -16,8 +18,9 @@ type MarkerEvents =
 
 export const markersMachine = createMachine(
   {
-    predictableActionArguments: true,
     id: 'markers-machine',
+    strict: true,
+    predictableActionArguments: true,
     // XState Typegen
     // See: https://xstate.js.org/docs/guides/typescript.html#typegen
     tsTypes: {} as import('./markersMachine.typegen').Typegen0,
@@ -27,6 +30,8 @@ export const markersMachine = createMachine(
     },
     context: {
       markers: [],
+      max: 5,
+      markersChanged: false,
     },
     initial: 'idle',
     states: {
@@ -36,19 +41,27 @@ export const markersMachine = createMachine(
             {
               cond: 'noMoreThanNMarkers',
               target: 'add',
+              actions: 'markersHaveNotChanged',
             },
-            {},
+            {
+              actions: 'markersHaveNotChanged',
+            },
           ],
           DELETE_MARKER: [
             {
               cond: 'greaterThanZero',
               target: 'delete',
+              actions: 'markersHaveNotChanged',
             },
-            {},
+            {
+              actions: 'markersHaveNotChanged',
+            },
           ],
           DRAG_MARKER: [
             {
+              cond: 'greaterThanZero',
               target: 'drag',
+              actions: 'markersHaveNotChanged',
             },
           ],
         },
@@ -56,37 +69,56 @@ export const markersMachine = createMachine(
       drag: {
         on: {
           DROP: {
-            actions: 'update_marker_latlng',
-            target: 'idle',
+            target: 'drag',
+            actions: ['update_marker_latlng', 'markersHaveChanged'],
           },
           GO_TO_IDLE: {
             target: 'idle',
+            actions: 'markersHaveNotChanged',
           },
           ADD_MARKER: {
             cond: 'noMoreThanNMarkers',
             target: 'add',
+            actions: 'markersHaveNotChanged',
           },
           DELETE_MARKER: {
             cond: 'greaterThanZero',
             target: 'delete',
+            actions: 'markersHaveNotChanged',
           },
         },
       },
       add: {
         on: {
-          ADD_ON_CLICK: {
-            target: 'idle',
-            actions: 'add_marker',
-          },
+          ADD_ON_CLICK: [
+            {
+              target: 'idle',
+              cond: 'onlyOneMoreMarker',
+              actions: ['add_marker', 'markersHaveChanged'],
+            },
+            {
+              target: 'add',
+              cond: 'noMoreThanNMarkers',
+              actions: ['add_marker', 'markersHaveChanged'],
+            },
+            {
+              target: 'idle',
+              actions: 'markersHaveNotChanged',
+            }
+          ],
           GO_TO_IDLE: {
             target: 'idle',
+            actions: 'markersHaveNotChanged',
           },
           DELETE_MARKER: {
             cond: 'greaterThanZero',
             target: 'delete',
+            actions: 'markersHaveNotChanged',
           },
           DRAG_MARKER: {
+            cond: 'greaterThanZero',
             target: 'drag',
+            actions: 'markersHaveNotChanged',
           },
         },
       },
@@ -94,17 +126,20 @@ export const markersMachine = createMachine(
         on: {
           DELETE_ON_CLICK: {
             target: 'idle',
-            actions: 'delete_marker',
+            actions: ['delete_marker', 'markersHaveChanged'],
           },
           GO_TO_IDLE: {
             target: 'idle',
+            actions: 'markersHaveNotChanged',
           },
           DRAG_MARKER: {
             target: 'drag',
+            actions: 'markersHaveNotChanged',
           },
           ADD_MARKER: {
             cond: 'noMoreThanNMarkers',
             target: 'add',
+            actions: 'markersHaveNotChanged',
           },
         },
       },
@@ -112,30 +147,34 @@ export const markersMachine = createMachine(
   },
   {
     guards: {
-      noMoreThanNMarkers: (context: MarkerContext) => {
-        return context.markers.length < 5;
+      onlyOneMoreMarker: (context) => {
+        return context.markers.length == context.max - 1;
+      },
+      noMoreThanNMarkers: (context) => {
+        return context.markers.length < context.max;
       },
       greaterThanZero: (context) => {
         return context.markers.length > 0;
       },
     },
     actions: {
+      markersHaveChanged: assign({ markersChanged: (_context) => true }),
+      markersHaveNotChanged: assign({ markersChanged: (_context) => false }),
       delete_marker: assign({
-        markers: (context: MarkerContext, event) => {
+        markers: (context, event) => {
           return context.markers.filter((_, idx) => event.idx !== idx);
         },
       }),
       add_marker: assign({
-        markers: (context: MarkerContext, event) => {
+        markers: (context, event) => {
           return [...context.markers, event.payload];
         },
       }),
       update_marker_latlng: assign({
-        markers: (context: MarkerContext, event) => [
-          // Remove the LatLng with the same index. This will be the state of the marker that was just
-          // dragged then dropped. Then we add it back in with the new LatLng object.
-          ...context.markers.filter((_marker, idx) => event.idx !== idx),
+        markers: (context, event) => [
+          ...context.markers.slice(0, event.idx),
           event.payload,
+          ...context.markers.slice(event.idx + 1),
         ],
       }),
     },

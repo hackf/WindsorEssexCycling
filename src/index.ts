@@ -1,25 +1,23 @@
-import L, { LeafletMouseEvent } from 'leaflet';
+import L, { LeafletMouseEvent, LatLngTuple } from 'leaflet';
 import { interpret } from 'xstate';
+import tingle from 'tingle.js';
+
 import { markersMachine } from './markersMachine';
 import { routesMachine } from './routeMachine';
 
-import '@bagage/leaflet.restoreview';
-import 'leaflet-fullhash';
-import 'leaflet-easybutton';
+import { createButtonGroup } from './buttonControl';
+import { divIconFactory } from './divIconFactory';
+import { isLocalStorageAvailable } from './localStorage';
 
-import tingle from 'tingle.js';
-
-import './../node_modules/leaflet-easybutton/src/easy-button.css';
 import './../node_modules/leaflet/dist/leaflet.css';
 import './../node_modules/tingle.js/dist/tingle.css';
 
-import markerImage from './../node_modules/leaflet/dist/images/marker-icon.png';
-import markerShadowImage from './../node_modules/leaflet/dist/images/marker-shadow.png';
-
 import './legend.css';
 import './styles.css';
+import { restoreMapView } from './restoreMapView';
+import { restoreRouteMarkers, saveRouteMarkers } from './saveRouteMarkers';
 
-const VERSION = 'v0.1'; // TODO: Bump when pushing new version in production
+const VERSION = 'v0.2'; // TODO: Bump when pushing new version in production
 
 function checkQuerySelector(
   parent: Element | Document,
@@ -32,18 +30,6 @@ function checkQuerySelector(
     throw new Error(`"${selector}" did not match any elements on parent.`);
   }
   return element;
-}
-
-function isLocalStorageAvailable() {
-  try {
-    const storageTest = '__storage_test__';
-    window.localStorage.setItem(storageTest, storageTest);
-    window.localStorage.removeItem(storageTest);
-    return true;
-  } catch (e) {
-    console.warn('Your browser blocks access to localStorage');
-    return false;
-  }
 }
 
 const hasLocalStorage = isLocalStorageAvailable();
@@ -90,77 +76,61 @@ document.addEventListener('DOMContentLoaded', function () {
     layers: [cyclosm],
   });
 
-  L.easyButton(
-    'fa-edit',
-    function () {
-      window.open(
-        'https://www.openstreetmap.org/edit' + window.location.hash,
-        '_blank'
-      );
+  const { update: updateMarkerControls } = createButtonGroup(map, [
+    {
+      id: 'drag',
+      icon: 'fa-up-down-left-right',
+      altText: 'Drag Marker',
     },
-    'Edit the map'
-  ).addTo(map);
-
-  L.easyButton(
-    'fa-question',
-    function () {
-      const modal = new tingle.modal({
-        footer: false,
-        closeMethods: ['overlay', 'button', 'escape'],
-        closeLabel: 'Go to map',
-      });
-
-      modal.setContent(
-        checkQuerySelector(document, '#legend .iframe').innerHTML
-      );
-      modal.open();
+    {
+      id: 'add',
+      icon: 'fa-location-dot',
+      altText: 'Add Marker',
     },
-    'Legend'
-  ).addTo(map);
-
-  L.easyButton(
-    'fa-info',
-    function () {
-      modal.open();
+    {
+      id: 'delete',
+      icon: 'fa-trash',
+      altText: 'Delete Marker',
     },
-    'About'
-  ).addTo(map);
+  ]);
 
-  // Both images are locationed in the same folder, so we can use one of them
-  // to get the base path for both
-  const basePath = markerImage.split('/').slice(0, -1).join('/');
-  const markerIcon = new L.Icon.Default({
-    // imagePath is what leaflet will prepend to the icon image paths
-    imagePath: `${basePath}/`,
-    // Since imagePath is the complete path, the iconUrl and shadowUrl options
-    // should be set to only the image file names
-    iconUrl: markerImage.split('/').slice(-1)[0],
-    shadowUrl: markerShadowImage.split('/').slice(-1)[0],
-  });
+  createButtonGroup(map, [
+    {
+      id: 'question',
+      icon: 'fa-question',
+      onClickFn() {
+        const modal = new tingle.modal({
+          footer: false,
+          closeMethods: ['overlay', 'button', 'escape'],
+          closeLabel: 'Go to map',
+        });
 
-  const markerService = interpret(markersMachine);
-  const routeService = interpret(routesMachine);
-
-  interface ButtonConfig {
-    icon: string;
-    onClickFn: () => void;
-    altText: string;
-  }
-
-  function mapButtonController(map: L.Map) {
-    let buttonControls: L.Control[] = [];
-    return {
-      addButtonsToMap(buttons: ButtonConfig[]) {
-        buttonControls.forEach((button) => map.removeControl(button));
-
-        buttonControls = buttons.map((config) =>
-          L.easyButton(config.icon, config.onClickFn, config.altText)
+        modal.setContent(
+          checkQuerySelector(document, '#legend .iframe').innerHTML
         );
-
-        buttonControls.forEach((button) => button.addTo(map));
+        modal.open();
       },
-    };
-  }
+      altText: 'Legend',
+    },
+    {
+      id: 'info',
+      icon: 'fa-info',
+      onClickFn() {
+        modal.open();
+      },
+      altText: 'About',
+    },
+  ]);
+
+  const savedMarkers = restoreRouteMarkers();
+  const markerService = interpret(
+    markersMachine.withContext({
+      markers: savedMarkers,
+      max: 5,
+      markersChanged: savedMarkers.length > 0,
+    })
+  );
+  const routeService = interpret(routesMachine);
 
   function markerLayerController(map: L.Map) {
     const markerGroup = L.layerGroup();
@@ -177,52 +147,85 @@ document.addEventListener('DOMContentLoaded', function () {
     };
   }
 
-  const { addButtonsToMap } = mapButtonController(map);
   const { addMarkersToMap } = markerLayerController(map);
 
   markerService.onTransition((state) => {
-    addButtonsToMap([
+    updateMarkerControls([
       {
-        icon: 'fa-up-down-left-right',
-        onClickFn: function () {
+        id: 'drag',
+        onClickFn(event: MouseEvent) {
+          event.preventDefault();
+          event.stopPropagation();
+
           if (state.matches('drag')) {
             markerService.send({ type: 'GO_TO_IDLE' });
           } else {
             markerService.send({ type: 'DRAG_MARKER' });
           }
         },
-        altText: 'Drag Marker',
+        state: state.matches('drag')
+          ? 'active'
+          : state.context.markers.length == 0
+          ? 'disabled'
+          : 'normal',
       },
       {
-        icon: 'fa-add',
-        onClickFn: function () {
+        id: 'add',
+        onClickFn(event: MouseEvent) {
+          // Need to prevent the Event from bubbling to the map element
+          // otherwise the map will also handle the Event which will place
+          // a marker directly under the add button
+          event.preventDefault();
+          event.stopPropagation();
+
           if (state.matches('add')) {
             markerService.send({ type: 'GO_TO_IDLE' });
           } else {
             markerService.send({ type: 'ADD_MARKER' });
           }
         },
-        altText: 'Add Marker',
+        state: state.matches('add')
+          ? 'active'
+          : state.context.markers.length == state.context.max
+          ? 'disabled'
+          : 'normal',
       },
       {
-        icon: 'fa-remove',
-        onClickFn: function () {
+        id: 'delete',
+        onClickFn(event: MouseEvent) {
+          event.preventDefault();
+          event.stopPropagation();
+
           if (state.matches('delete')) {
             markerService.send({ type: 'GO_TO_IDLE' });
           } else {
             markerService.send({ type: 'DELETE_MARKER' });
           }
         },
-        altText: 'Delete Marker',
+        state: state.matches('delete')
+          ? 'active'
+          : state.context.markers.length == 0
+          ? 'disabled'
+          : 'normal',
       },
     ]);
 
-    if (state.changed) {
+    // events array will be empty on the first transtion
+    // Since there could be saved markers the code needs to
+    // run so that those markers are added to the map
+    if (state.changed || state.events.length === 0) {
       addMarkersToMap(
-        state.context.markers.map((markerData, idx) => {
+        state.context.markers.map((markerData, idx, markers) => {
+          const icon =
+            idx == 0
+              ? divIconFactory(idx + 1, '#00ff00')
+              : idx + 1 == markers.length
+              ? divIconFactory(idx + 1, '#0000ff')
+              : divIconFactory(idx + 1, '#ff0000');
+
           const marker: L.Marker = state.matches('drag')
-            ? L.marker(markerData, { draggable: true, icon: markerIcon })
-            : L.marker(markerData, { icon: markerIcon });
+            ? L.marker(markerData, { draggable: true, icon })
+            : L.marker(markerData, { icon });
 
           if (state.matches('drag')) {
             marker.addOneTimeEventListener('dragend', (e) => {
@@ -245,18 +248,24 @@ document.addEventListener('DOMContentLoaded', function () {
         map.addOneTimeEventListener('click', (e: LeafletMouseEvent) => {
           markerService.send({ type: 'ADD_ON_CLICK', payload: e.latlng });
         });
+      } else {
+        map.removeEventListener('click');
       }
 
       // Only request a route while in the idle state
       // This fixes the flickering (route being removed and added) when the
       // state transitions. Realisically, the route should only be fetched after
       // changes to the markers which means the machine should be in the idle state
-      if (state.matches('idle') && state.context.markers.length >= 2) {
+      if (state.context.markersChanged && state.context.markers.length >= 2) {
         routeService.send({ type: 'FETCH', payload: state.context.markers });
       }
 
       if (state.context.markers.length < 2) {
         routeService.send({ type: 'CLEAR_ROUTES' });
+      }
+
+      if (state.context.markersChanged) {
+        saveRouteMarkers(state.context.markers);
       }
     }
   });
@@ -264,9 +273,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function routeLayerController(map: L.Map) {
     let routeLine: L.Polyline = L.polyline([]);
     return {
-      addRouteToMap(route: L.LatLngTuple[] | null) {
+      addRouteToMap(route: L.LatLngTuple[] | null, isLoading: boolean) {
         map.removeLayer(routeLine);
-        if (route) {
+        if (isLoading && route) {
+          routeLine = L.polyline(route, { color: 'blue' });
+          map.addLayer(routeLine);
+        } else if (route) {
           routeLine = L.polyline(route, { color: 'red' });
           map.addLayer(routeLine);
         }
@@ -277,35 +289,25 @@ document.addEventListener('DOMContentLoaded', function () {
   const { addRouteToMap } = routeLayerController(map);
 
   routeService.onTransition((state) => {
-    addRouteToMap(state.context.route);
+    const isLoading = state.matches('loading');
+    const route = isLoading
+      ? state.context.markers.map(
+          (latlng) => [latlng.lat, latlng.lng] as LatLngTuple
+        )
+      : state.context.route;
+    addRouteToMap(route, isLoading);
   });
 
   markerService.start();
   routeService.start();
 
   map.attributionControl.setPrefix(
-    '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a> ' +
-      VERSION
+    '<a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> | <a href="https://github.com/cyclosm/cyclosm-cartocss-style/releases" title="CyclOSM - Open Bicycle render">CyclOSM</a>'
   );
 
-  // No type deps for the restore view module
-  // We should replace it with something else
-  // @ts-ignore
-  if (!map.restoreView()) {
-    // Default view on Essex County, ON.
-    map.setView([42.1659, -82.6633], 11);
-  }
+  restoreMapView(map, [42.1659, -82.6633], 11);
 
-  // Set up hash plugin
-  const allMapLayers = {
-    cyclosm: cyclosm,
-  };
-  // No type deps for the hash module
-  // We should replace it with something else
-  // @ts-ignore
-  L.hash(map, allMapLayers);
-
-  // Add a scale
+  // Scale control in the bottom left
   L.control.scale().addTo(map);
 
   function handleResize() {
