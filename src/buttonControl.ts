@@ -37,13 +37,20 @@ function createButton(config: ButtonConfig) {
 export function createButtonGroup(map: L.Map, buttonConfigs: ButtonConfig[]) {
   const buttonMap = new Map<
     string,
-    { element: HTMLAnchorElement; onClickFn: ((event: MouseEvent) => void) | null }
+    {
+      element: HTMLAnchorElement;
+      onClickFn: ((event: MouseEvent) => void) | null;
+    }
   >();
 
   const Control = L.Control.extend({
     onAdd(_map: L.Map) {
       const containerDiv = L.DomUtil.create('div');
-      containerDiv.classList.add('leaflet-control', 'leaflet-bar', 'marker-controls');
+      containerDiv.classList.add(
+        'leaflet-control',
+        'leaflet-bar',
+        'marker-controls'
+      );
       for (let buttonConfig of buttonConfigs) {
         const element = createButton(buttonConfig);
         buttonMap.set(buttonConfig.id, {
@@ -74,7 +81,7 @@ export function createButtonGroup(map: L.Map, buttonConfigs: ButtonConfig[]) {
             `Button ID (${buttonConfig.id}) does not exist in map.`
           );
         }
-  
+
         const { element, onClickFn } = button;
 
         if (buttonConfig.icon) {
@@ -93,8 +100,11 @@ export function createButtonGroup(map: L.Map, buttonConfigs: ButtonConfig[]) {
           if (onClickFn) {
             element.removeEventListener('click', onClickFn);
           }
-          element.addEventListener('click', buttonConfig.onClickFn)
-          buttonMap.set(buttonConfig.id, { element, onClickFn: buttonConfig.onClickFn });
+          element.addEventListener('click', buttonConfig.onClickFn);
+          buttonMap.set(buttonConfig.id, {
+            element,
+            onClickFn: buttonConfig.onClickFn,
+          });
         }
 
         element.classList.remove('button-active');

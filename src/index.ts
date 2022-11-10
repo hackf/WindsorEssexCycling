@@ -16,6 +16,7 @@ import './legend.css';
 import './styles.css';
 import { restoreMapView } from './restoreMapView';
 import { restoreRouteMarkers, saveRouteMarkers } from './saveRouteMarkers';
+import {displayServerError} from './displayServerError';
 
 const VERSION = 'v0.2'; // TODO: Bump when pushing new version in production
 
@@ -273,13 +274,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function routeLayerController(map: L.Map) {
     let routeLine: L.Polyline = L.polyline([]);
     return {
-      addRouteToMap(route: L.LatLngTuple[] | null, isLoading: boolean) {
+      addRouteToMap(route: L.LatLngTuple[] | null, color: 'blue' | 'red') {
         map.removeLayer(routeLine);
-        if (isLoading && route) {
-          routeLine = L.polyline(route, { color: 'blue' });
-          map.addLayer(routeLine);
-        } else if (route) {
-          routeLine = L.polyline(route, { color: 'red' });
+        if (route) {
+          routeLine = L.polyline(route, { color });
           map.addLayer(routeLine);
         }
       },
@@ -287,15 +285,26 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   const { addRouteToMap } = routeLayerController(map);
+  const { removeErrorFromMap, addErrorToMap } = displayServerError(map);
 
   routeService.onTransition((state) => {
-    const isLoading = state.matches('loading');
-    const route = isLoading
-      ? state.context.markers.map(
+    const noRoute = state.matches('loading') || state.matches('failure');
+    if (noRoute) {
+      addRouteToMap(
+        state.context.markers.map(
           (latlng) => [latlng.lat, latlng.lng] as LatLngTuple
-        )
-      : state.context.route;
-    addRouteToMap(route, isLoading);
+        ),
+        'blue'
+      );
+    } else {
+      addRouteToMap(state.context.route, 'red');
+    }
+
+    if (state.matches('failure')) {
+      addErrorToMap(state.context.markers, state.context.error);
+    } else {
+      removeErrorFromMap();
+    }
   });
 
   markerService.start();
@@ -325,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
       (checkQuerySelector(document, '#map') as HTMLElement).style.right =
         '300px';
       (
-        checkQuerySelector(document, '#legend .iframe') as HTMLElement
+        checkQuerySelector(document, '#legend .legend-container') as HTMLElement
       ).style.display = 'initial';
       (checkQuerySelector(document, '#legend') as HTMLElement).style.width =
         '300px';
@@ -336,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function () {
       (checkQuerySelector(document, '#map') as HTMLElement).style.right =
         '42px';
       (
-        checkQuerySelector(document, '#legend .iframe') as HTMLElement
+        checkQuerySelector(document, '#legend .legend-container') as HTMLElement
       ).style.display = 'none';
       (checkQuerySelector(document, '#legend') as HTMLElement).style.width =
         '42px';
@@ -365,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function () {
       (checkQuerySelector(document, '#map') as HTMLElement).style.right =
         '300px';
       (
-        checkQuerySelector(document, '#legend .iframe') as HTMLElement
+        checkQuerySelector(document, '#legend .legend-container') as HTMLElement
       ).style.display = 'initial';
       (checkQuerySelector(document, '#legend') as HTMLElement).style.width =
         '300px';
@@ -379,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function () {
       (checkQuerySelector(document, '#map') as HTMLElement).style.right =
         '42px';
       (
-        checkQuerySelector(document, '#legend .iframe') as HTMLElement
+        checkQuerySelector(document, '#legend .legend-container') as HTMLElement
       ).style.display = 'none';
       (checkQuerySelector(document, '#legend') as HTMLElement).style.width =
         '42px';
