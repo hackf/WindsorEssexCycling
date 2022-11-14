@@ -43,3 +43,7 @@
 #full-legend img {
   max-height: 16px;
 }
+  
+.legend-container {
+  overflow-y: scroll;
+}

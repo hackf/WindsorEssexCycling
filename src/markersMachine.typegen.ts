@@ -27,6 +27,7 @@ export interface Typegen0 {
   eventsCausingServices: {};
   eventsCausingGuards: {
     greaterThanZero: 'DELETE_MARKER' | 'DRAG_MARKER';
+    lastMarker: 'DELETE_ON_CLICK';
     noMoreThanNMarkers: 'ADD_MARKER' | 'ADD_ON_CLICK';
     onlyOneMoreMarker: 'ADD_ON_CLICK';
   };

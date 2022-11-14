@@ -124,10 +124,17 @@ export const markersMachine = createMachine(
       },
       delete: {
         on: {
-          DELETE_ON_CLICK: {
-            target: 'idle',
-            actions: ['delete_marker', 'markersHaveChanged'],
-          },
+          DELETE_ON_CLICK: [
+            {
+              target: 'idle',
+              cond: 'lastMarker',
+              actions: ['delete_marker', 'markersHaveChanged'],
+            },
+            {
+              target: 'delete',
+              actions: ['delete_marker', 'markersHaveChanged'],
+            },
+          ],
           GO_TO_IDLE: {
             target: 'idle',
             actions: 'markersHaveNotChanged',
@@ -149,6 +156,9 @@ export const markersMachine = createMachine(
     guards: {
       onlyOneMoreMarker: (context) => {
         return context.markers.length == context.max - 1;
+      },
+      lastMarker: (context) => {
+        return context.markers.length - 1 == 0;
       },
       noMoreThanNMarkers: (context) => {
         return context.markers.length < context.max;

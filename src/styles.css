@@ -141,3 +141,27 @@ a.marker-control-button.leaflet-disabled span.fa-trash {
 a.marker-control-button.leaflet-disabled span.fa-location-dot {
   color: inherit;
 }
+
+.server-error {
+  background-color: #C41E3A;
+  color: #FFFFFF;
+  font-weight: 700;
+  border-radius: 5px;
+  border: 2px solid #C41E3A;
+  padding: 2px;
+}
+
+.server-error a {
+  text-decoration: underline;
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+.server-error a:visited {
+  color: #FFFFFF;
+}
+
+.server-error a:hover {
+  color: #000000;
+}
+

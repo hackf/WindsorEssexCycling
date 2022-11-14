@@ -26,14 +26,16 @@ export interface Typegen0 {
   };
   eventsCausingActions: {
     abortFetch: 'CLEAR_ROUTES' | 'FETCH';
+    clearError: 'CLEAR_ROUTES' | 'FETCH' | 'xstate.stop';
     clearRoute: 'CLEAR_ROUTES' | 'FETCH' | 'xstate.stop';
-    createAbortController: 'FETCH' | 'RETRY';
+    createAbortController: 'FETCH';
+    parseError: 'error.platform.getRoute';
     setError: 'error.platform.getRoute';
     setMarkers: 'FETCH';
     setRoute: 'done.invoke.getRoute';
   };
   eventsCausingServices: {
-    getRoute: 'FETCH' | 'RETRY';
+    getRoute: 'FETCH';
   };
   eventsCausingGuards: {};
   eventsCausingDelays: {};
