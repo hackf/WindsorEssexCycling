@@ -219,10 +219,10 @@ document.addEventListener('DOMContentLoaded', function () {
         state.context.markers.map((markerData, idx, markers) => {
           const icon =
             idx == 0
-              ? divIconFactory(idx + 1, '#00ff00')
+              ? divIconFactory(idx + 1, '#008000')
               : idx + 1 == markers.length
-              ? divIconFactory(idx + 1, '#0000ff')
-              : divIconFactory(idx + 1, '#ff0000');
+              ? divIconFactory(idx + 1, '#ff0000')
+              : divIconFactory(idx + 1, '#0000ff');
 
           const marker: L.Marker = state.matches('drag')
             ? L.marker(markerData, { draggable: true, icon })
@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function routeLayerController(map: L.Map) {
     let routeLine: L.Polyline = L.polyline([]);
     return {
-      addRouteToMap(route: L.LatLngTuple[] | null, color: 'blue' | 'red') {
+      addRouteToMap(route: L.LatLngTuple[] | null, color: 'blue' | 'red' | 'green') {
         map.removeLayer(routeLine);
         if (route) {
           routeLine = L.polyline(route, { color });
@@ -288,8 +288,14 @@ document.addEventListener('DOMContentLoaded', function () {
   const { removeErrorFromMap, addErrorToMap } = displayServerError(map);
 
   routeService.onTransition((state) => {
-    const noRoute = state.matches('loading') || state.matches('failure');
-    if (noRoute) {
+    if (state.matches('loading')) {
+      addRouteToMap(
+        state.context.markers.map(
+          (latlng) => [latlng.lat, latlng.lng] as LatLngTuple
+        ),
+        'green'
+      );
+    } else if (state.matches('failure')) {
       addRouteToMap(
         state.context.markers.map(
           (latlng) => [latlng.lat, latlng.lng] as LatLngTuple
